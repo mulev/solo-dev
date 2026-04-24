@@ -148,25 +148,25 @@ N. {Failure point}: {what goes wrong and why} — *evidence: {file:line or doc r
 </analysis-format>
 
 <example>
-**Problem:** Tapping "Resume reading" opens the book at page 1 instead of the saved position.
+**Problem:** Clicking "Resume" opens the document at the beginning instead of the saved position.
 
 **Execution chain:**
-1. User taps "Resume reading" button → calls `ReaderBloc.openBook(bookId, resume: true)` — *evidence: `lib/features/library/widgets/book_card.dart:142`*
-2. `ReaderBloc.openBook` calls `progressRepository.getLastPosition(bookId)` → returns `ReadingPosition(locator: Locator(...), updatedAt: ...)` — *evidence: `lib/features/reader/bloc/reader_bloc.dart:87`, confirmed non-null via database query*
-3. `openBook` passes the locator to `readerService.open(publication, initialLocator: locator)` — *evidence: `reader_bloc.dart:93`*
-4. `ReaderService.open` calls `navigator.goTo(initialLocator)` — *evidence: `lib/features/reader/services/reader_service.dart:41`*
-5. **Failure:** `navigator.goTo` receives the locator but `navigator` is not yet initialized at this point — `_navigator` is `null`, the call is silently dropped, and the reader falls back to page 1 — *evidence: `reader_service.dart:38` shows `_navigator` is set in `onReaderReady` callback, which fires asynchronously after `open()` returns*
+1. User clicks "Resume" button → calls `EditorBloc.openDocument(docId, resume: true)` — *evidence: `lib/features/documents/widgets/doc_card.dart:142`*
+2. `EditorBloc.openDocument` calls `progressRepository.getLastPosition(docId)` → returns `SavedPosition(cursor: CursorPos(...), updatedAt: ...)` — *evidence: `lib/features/editor/bloc/editor_bloc.dart:87`, confirmed non-null via database query*
+3. `openDocument` passes the position to `viewService.open(document, initialPosition: position)` — *evidence: `editor_bloc.dart:93`*
+4. `ViewService.open` calls `renderer.navigateTo(initialPosition)` — *evidence: `lib/features/editor/services/view_service.dart:41`*
+5. **Failure:** `renderer.navigateTo` receives the position but `renderer` is not yet initialized at this point — `_renderer` is `null`, the call is silently dropped, and the editor falls back to the beginning — *evidence: `view_service.dart:38` shows `_renderer` is set in `onViewReady` callback, which fires asynchronously after `open()` returns*
 
-**Root cause:** `goTo(initialLocator)` is called synchronously during `open()`, but the navigator is only available after the reader widget finishes initialization (`onReaderReady`). The locator is sent to a null navigator and silently discarded.
+**Root cause:** `navigateTo(savedPosition)` is called synchronously during `initialize()`, but the renderer is only available after the view finishes setup (`onViewReady`). The position is sent to a null renderer and silently discarded.
 
 **Supporting evidence:**
-- `reader_service.dart:38`: `_navigator = null` until `onReaderReady` assigns it at line 52
-- Flutter framework docs confirm widget initialization callbacks are asynchronous and fire after the first frame
-- `reader_service.dart:41`: no null check or queuing mechanism — `_navigator?.goTo(locator)` uses `?.` which silently no-ops on null
+- `view_controller.dart:38`: `_renderer = null` until `onViewReady` assigns it at line 52
+- Framework docs confirm view initialization callbacks are asynchronous and fire after the first frame
+- `view_controller.dart:41`: no null check or queuing mechanism — `_renderer?.navigateTo(position)` uses `?.` which silently no-ops on null
 
 **What was ruled out:**
-- Database returning stale/null position: verified via `bd show` and direct SQL query — position is correctly stored and retrieved
-- Locator format mismatch: the returned locator uses the same `Locator` type the navigator expects — confirmed by type analysis
+- Database returning stale/null position: verified via direct SQL query — position is correctly stored and retrieved
+- Position format mismatch: the returned position uses the same `Position` type the renderer expects — confirmed by type analysis
 </example>
 
 After presenting the analysis, use `AskUserQuestion`:

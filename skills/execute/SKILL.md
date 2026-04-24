@@ -141,7 +141,7 @@ Before writing any code, ensure a clean git branch and claim the tracker task.
 **Branch setup:**
 
 1. Check the current branch of the project repo.
-2. **If on `main`**: pull latest, create a new branch named after the plan (e.g., `feat/epub-table-of-contents` from `epist_feat_epub_table_of_contents.md`).
+2. **If on `main`**: pull latest, create a new branch named after the plan (e.g., `feat/user-profile-settings` from `myapp_feat_user_profile_settings.md`).
 3. **If NOT on `main`**: use `AskUserQuestion`:
 ```
 question: "You're on branch '{current}'. How do you want to proceed?"

@@ -1,0 +1,25 @@
+{
+  "name": "solo-dev-skills",
+  "owner": {
+    "name": "Mike Mulev",
+    "email": "m.mulev@gmail.com"
+  },
+  "metadata": {
+    "description": "Plan, investigate, execute, and market — skills for solo developers working with AI agents",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "solo-dev",
+      "description": "Core workflow skills: investigate bugs, plan implementation, execute phases, and run marketing research",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/investigate",
+        "./skills/plan",
+        "./skills/execute",
+        "./skills/marketer"
+      ]
+    }
+  ]
+}
