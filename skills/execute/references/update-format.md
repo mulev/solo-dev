@@ -78,6 +78,98 @@ Insert in the **working file** — the slice file for multi-phase plans, the pla
 
 ---
 
+## Adding the Architecture Gate Results
+
+Required artifact for every phase. Insert in the **working file** (slice file for multi-phase, plan file for single-phase) after Step 2.3 of execute and before flipping the phase status to `✅ COMPLETED`. Phase cannot end without it.
+
+Scope: every file returned by `git diff --name-only` for this phase, including test files. If a Refactoring Round was opened, this block records the **post-refactor final pass** — every row must be PASS.
+
+```markdown
+## Architecture Gate Results — Phase {N} — {YYYY-MM-DD}
+
+Banner (one line per file, captured from `run_arch_gate.py` or manual run):
+
+\```
+[arch-gate] file={path} LOC=PASS({n}) SHIM=PASS({exp}/{code}) DEPS=MANUAL SRP=MANUAL DRY=MANUAL TEST=MANUAL
+\```
+
+LOC and SHIM are automated (helper script). DEPS, SRP, DRY, TEST are model/human judgments — fill the table below with the reasoning. The banner stays as the script emits it; the table carries the conclusions.
+
+| File | LOC | SHIM | SRP | DRY | DEPS (foreign modules touched) | TEST | Overall |
+|------|-----|------|-----|-----|-------------------------------|------|---------|
+| `{path}` | PASS({n}) | PASS | PASS — {one-sentence responsibility, no "and"} | PASS — checked: `{grep terms}` | PASS — {≤5 distinct foreign feature/domain modules: list them} | PASS — {test strategy: isolated / fixtures / DI} | PASS |
+
+If any new file in the table fails the Meaningfulness Test (independent name, ≥2 unrelated callers OR independent test, real coupling reduction, survives inline-back), record it as a SHIM or DEPS FAIL with the failing condition — do not paper over the smell with a "PASS" annotation.
+
+**Companion-skill status:**
+- `{code_simplifier}`: ran / skipped — {quoted spawn error / empty config}
+- `{code_reviewer}`: deferred to Step 5 / skipped — {reason}
+
+When a companion skill is `skipped`, the local checklist replaces it — record below which manual checks compensated.
+
+### Validation
+
+Output of `./validate run phase-exit`, run from the repo root and pasted verbatim — **provenance header first**, then id, result, UTC timestamp, last output line (see `../_shared/validators.md`):
+
+\```
+# stage=phase-exit conf=1524238371-412 commit=25fec33 dirty=no started=2026-08-19T11:47:12Z finished=2026-08-19T11:55:46Z finished_epoch=1786010146 rows=static,suites
+static  PASS  2026-08-19T11:47:15Z  No issues found!
+suites  PASS  2026-08-19T11:55:44Z  All tests passed!
+\```
+
+`cd {repo root} && ./validate verify phase-exit {this file}` → exit 0. The header is what makes this checkable: verification requires every row stamped inside that run's window and the run to be no older than the code it claims, so a ledger copied from another phase, typed by hand, or earned before the last edit all fail. Paste the header or the ledger proves nothing.
+
+Every row must be PASS. A FAIL opens a Bug Round or Refactoring Round and the **whole stage** re-runs afterwards. `user`-stage rows appear as `PENDING-USER` and are handed to the user in the close-out. If the repo has no `validators.conf` (runner exits 2), this section reads `validators: none — {reason}` and the report says so.
+
+A later phase may add a validator row. From then on `verify` reports it as `DRIFT` against this block — expected, not a failure, and never a reason to re-run this phase's stage. Record the line and leave the ledger alone:
+
+\```
+validate: DRIFT static-plugin — the stage gained this row after this ledger ran
+\```
+
+**Overall:** PASS
+
+If any row is FAIL → open a Refactoring Round, do not flip the phase status. After the refactor, regenerate this block in full from the post-refactor file set.
+```
+
+---
+
+## Adding a Refactoring Round
+
+Use this when the architecture verification gate fails (file over `{max_file_loc}`, multi-responsibility, duplicated helper, hard to test in isolation). Insert in the **working file**. Number sequentially across both Bug and Refactoring rounds within the same phase.
+
+```markdown
+## Refactoring Round 1: {Short description} — {YYYY-MM-DD}
+
+### Violation
+{Which gate check failed and on which file. Be specific:}
+- File: `{path}` — {N} LOC (limit: `{max_file_loc}`)
+- Shim: "{file is N% re-export — pure metric laundering, no behavior}"
+- Responsibility audit: "{the single sentence with 'and' that surfaced the split}"
+- DRY: "{the existing helper that already covers this}"
+- Coupling enumeration: "{foreign feature/domain modules touched: A, B, C, D, E, F — over 5}"
+- Testability: "{global state / static dependency that blocks isolation}"
+- Meaningfulness Test: "{which of the four conditions failed — independent name / plural callers / real coupling reduction / inline-back}"
+
+### Split plan
+- New module: `{path}` — responsibility: {one sentence, no "and"}
+- Public API: `{symbols}`
+- Code moved: {what came out of the original file}
+- Tests moved: {test files that follow the code}
+
+### Fix
+- [x] Extracted `{symbol(s)}` from `{old path}` to `{new path}`
+- [x] Updated callers: {list}
+- [x] Re-ran changed test files — green
+- [x] Re-ran architecture gate on every touched file — clean
+
+### Verification
+- [x] `{old path}` now ≤ `{max_file_loc}` LOC and has a single responsibility
+- [x] `{new path}` ≤ `{max_file_loc}` LOC, single responsibility, isolated tests
+```
+
+---
+
 ## Recording Files
 
 Add entries as files are created or modified during execution.
@@ -88,10 +180,11 @@ Add entries as files are created or modified during execution.
 1. The **slice file** — phase-specific files only
 2. The **master plan** — consolidated list across all phases
 
-**Files Created:**
+**Files Created:** Always record LOC. If a file is under a `**LOC waiver:**`, state it on the same line.
 ```markdown
 - `lib/services/reader_service.dart` (85 lines) — reader service with pagination support
 - `test/services/reader_service_test.dart` (120 lines) — unit tests for reader service
+- `lib/parsers/grammar.dart` (412 lines) — generated parser. **LOC waiver:** generator output; alternatives (hand-written / split tables) reduce maintainability.
 ```
 
 **Files Modified:**
@@ -106,18 +199,20 @@ Add entries as files are created or modified during execution.
 
 ### Single-phase plans
 
-1. Change status line: `**Status:** ✅ COMPLETED — {YYYY-MM-DD}`
-2. Verify all Implementation Progress checkboxes are `[x]`
-3. Verify Files Created/Modified sections are complete
-4. Verify Success Criteria checkboxes are `[x]`
+1. Verify a `## Architecture Gate Results` block exists with **Overall: PASS** dated within this execution. If absent or FAIL → return to Step 2.3, do not flip status.
+2. Change status line: `**Status:** ✅ COMPLETED — {YYYY-MM-DD}`
+3. Verify all Implementation Progress checkboxes are `[x]`
+4. Verify Files Created/Modified sections are complete
+5. Verify Success Criteria checkboxes are `[x]`
 
 ### Multi-phase plans
 
-1. Verify all slice files have `**Status:** ✅ COMPLETED — {YYYY-MM-DD}`
-2. Verify all `## Progress` lines in the master plan are `[x]` with dates
-3. Change master plan status line: `**Status:** ✅ COMPLETED — {YYYY-MM-DD}`
-4. Verify master plan's consolidated Files Created/Modified sections are complete
-5. Verify Success Criteria checkboxes are `[x]` in the master plan
+1. Verify each slice file contains its own `## Architecture Gate Results` block with **Overall: PASS** before its `**Status:** ✅ COMPLETED` line.
+2. Verify all slice files have `**Status:** ✅ COMPLETED — {YYYY-MM-DD}`
+3. Verify all `## Progress` lines in the master plan are `[x]` with dates
+4. Change master plan status line: `**Status:** ✅ COMPLETED — {YYYY-MM-DD}`
+5. Verify master plan's consolidated Files Created/Modified sections are complete
+6. Verify Success Criteria checkboxes are `[x]` in the master plan
 
 ---
 
@@ -125,12 +220,14 @@ Add entries as files are created or modified during execution.
 
 Handle these directly (no planning skill needed):
 - Marking tasks `[x]`
-- Adding file entries
+- Adding file entries (with LOC counts and any waivers)
 - Adding a bug round for a test failure
+- Adding a refactoring round for an architecture-gate failure (extracting one module from another within the current phase)
 - Completing a phase header or status line
 - Updating master plan progress section
 
-Invoke `{plan_skill}` in Update mode for:
+Invoke the `{plan_skill}` skill (see *Invoking companion skills* in `SKILL.md`) in Update mode for:
 - Adding a new phase discovered during implementation
 - Restructuring remaining phases after a major discovery
 - Significant scope changes that require re-analysis
+- An architectural split that grows beyond the current phase — when extracting one component reveals a second component that itself needs its own phase, hand back to planning rather than ballooning the current slice.

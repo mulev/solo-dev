@@ -14,7 +14,11 @@
     done/                                       ← completed plans (moved from todo/)
       {single_phase_plan}.md
       {multi_phase_plan}/                       ← entire folder moves to done/
+    investigations/                             ← outcome files from the investigate skill
+      {project}_invest_{short_name}.md          ← root cause + approved fix (reference only)
 ```
+
+Investigation files are written by the `investigate` skill before handoff. Plans created from an investigation MUST link to the investigation file from their `## Background` section and MUST NOT overwrite it. Investigations stay in place after the plan moves through `todo/` → `done/`.
 
 System plan mirror:
 ```
@@ -63,16 +67,18 @@ project_fix_integration_test_flakiness/
   phase_6_polish.md
 ```
 
-### Type Codes
+### Type Codes & Values
 
-| Code | Maps to template type |
-|------|-----------------------|
-| feat | Feature |
-| fix | Fix |
-| refactor | Refactor |
-| tech | Tech |
-| docs | Docs |
-| epic | Epic (multi-slice plan with multiple independent deliverables) |
+Filename code (lowercase) ↔ plan-header label (`# {Project} {Type}: {Title}`) ↔ when to use:
+
+| Code | Type label | When to use |
+|------|------------|-------------|
+| feat | Feature | New user-facing capability |
+| fix | Fix | Bug fix |
+| refactor | Refactor | Code restructuring without behavior change |
+| tech | Tech | Infrastructure, CI/CD, tooling, dependencies |
+| docs | Docs | Documentation-only changes |
+| epic | Epic | Multi-slice plan spanning multiple independent deliverables |
 
 For epics, the filename/folder uses the `epic` type code: `{project}_epic_{short_name}/`
 Example: `project_epic_full_coverage/`

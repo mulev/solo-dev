@@ -1,19 +1,19 @@
 ---
 name: plan
 description: >
-  Creates and manages execution plans for software projects. Plans are vertical
-  slices — each phase is an atomic deliverable with TDD tests, implementation,
-  integration tests, docs, and polish. Multi-phase plans produce a folder with a
-  master plan and per-phase slice files for focused context, optionally
-  decomposed into tracked tasks with one task per slice. Handles three operations:
-  (1) creating plans via requirements gathering, codebase exploration,
-  vertical-slice structuring, and task decomposition, (2) updating plans to mark
-  progress, add bug rounds, or
-  record files modified, (3) completing plans by updating status and moving to
-  done/. Use when the user says "plan", "create a plan", "update the plan",
-  "mark as done", or discusses planning any feature, fix, refactoring, or
-  technical task. Also triggers when the user references an existing plan file,
-  asks about plan status, or wants to split a plan into separate files.
+  Creates, updates, and completes execution plans for software projects. Plans
+  are vertical slices — each phase is an atomic deliverable with TDD tests,
+  implementation, integration tests, docs, and polish. Multi-phase plans
+  produce a folder (master plan + per-phase slice files), optionally decomposed
+  into tracked tasks. Handles three operations: create (requirements gathering,
+  codebase exploration, slice structuring, task decomposition), update (mark
+  progress, add bug rounds, record files modified), complete (set status, move
+  to done/). Use when the user says "plan", "create a plan", "draft a plan",
+  "spec out", "break down", "roadmap", "update the plan", "mark as done", or
+  discusses planning any feature, fix, refactor, migration, or technical task.
+  Also triggers when the user references an existing plan file, asks about plan
+  status, wants to split a plan into separate files, or says "what's the plan
+  for X".
 ---
 
 # Plan
@@ -30,6 +30,55 @@ This is non-negotiable. It must be the very first thing the user sees.
 
 ---
 
+## Conduct
+
+Read `../_shared/agent-conduct.md` before the first tool call of this workflow. It carries the ownership, evidence, verification, shell, localization and scope rules every step below assumes. **Required reading** — the localization rules there are what Step 4's locale scan and the plan's Localization sections enforce, and the "no TODO comments in code" rule is why plan files are the single source of truth for deferred work.
+
+---
+
+## Asking the user
+
+Every question you ask the user — clarification, confirmation, choice between options — MUST go through the host's structured-question tool. Plain-text questions are a last-resort fallback only.
+
+**Tool resolution (try in order, first hit wins for the session):**
+
+1. **Claude Code** — `AskUserQuestion`. Deferred tool. Load its schema once per session:
+   ```
+   ToolSearch(query="select:AskUserQuestion", max_results=1)
+   ```
+   If the schema loads, call `AskUserQuestion` directly for the rest of the session.
+2. **Codex CLI (interactive TUI)** — `ask_user_question` (preferred, structured single/multi-choice) or `request_user_input` (free text). Native, no loader. If callable, use it.
+3. **MCP elicitation** — if any connected MCP server exposes `elicitation/create`, use it (form mode with `requestedSchema` for structured choices).
+4. **omp (Oh My Pi)** — `ask`, native, no loader. Emit it as the only tool call in its message; the runtime runs it exclusively. Cancellation raises `ToolAbortError`; headless runs have no `ask`, so use 5 there.
+5. **Fallback** — clearly-formatted numbered plain-text question, then wait for the user's reply. Use only when 1–4 are unavailable (e.g. `codex exec` non-interactive runs strip native question tools).
+
+Verify resolution every session — never assume the prior choice still applies. Batch up to 4 questions per call. Provide likely answers as options; the user picks "Other" for custom input.
+
+**Ask in the same message.** Attach the question call to the message carrying the gate prose. A turn that ends on gate prose has asked nothing — the gate becomes a rhetorical question and the workflow proceeds unapproved.
+
+**Treat a cancelled or timed-out question as the conservative answer.** Take the option that proceeds no further, name it, and stop. A cancellation is never permission to continue.
+
+See `../_shared/tooling-examples.md` for the canonical call shape.
+
+Where the rest of this skill says `AskUserQuestion`, treat it as a placeholder for whichever tool resolved above.
+
+---
+
+## Invoking companion skills
+
+When this skill hands off to another (e.g., `{execute_skill}`), use the harness's skill-invocation mechanism. Configured shorthands hold the **bare skill name** with no prefix — the prefix is harness convention, never written into config.
+
+Pick the first mechanism available in the current environment:
+
+- **Claude Code:** call the `Skill` tool with `skill: "{execute_skill}"`. If `Skill` is not available but the skill is exposed as a user-runnable slash command, write `/{execute_skill}`.
+- **Codex (interactive TUI):** invoke as `${execute_skill}`.
+- **Codex (`codex exec` non-interactive):** the slash-skill invocation is not available — emit the literal sentence `Use the {execute_skill} skill.` as your next assistant message (OpenAI deterministic-workflow pattern; fuzzy phrasing drops the handoff).
+- **Fallback (any harness):** read `{skills_dir}/{execute_skill}/SKILL.md` directly with `Read` and follow its workflow inline in the current conversation. Pass the handoff context (plan file path, project) as the first message of that inline workflow.
+
+Do not write a literal `/` or `$` inside config values — the harness adds it.
+
+---
+
 ## Configuration
 
 This skill reads `skill.config.md` from its base directory on every invocation.
@@ -39,7 +88,7 @@ This skill reads `skill.config.md` from its base directory on every invocation.
 2. Use `AskUserQuestion` offering interactive or manual setup.
 3. **Interactive flow:**
    - Plans directory (default: `project_plans`)
-   - System plan mirror (default: `~/.claude/plans`, or empty to disable)
+   - System plan mirror (default: empty/disabled; set it only if the harness has a plan-scanning directory — Claude Code uses `~/.claude/plans`)
    - Known projects — name + code path pairs (at least one required)
    - Issue tracker — enable/disable, CLI command name (default: disabled)
    - Formatter and test command (or leave empty to infer from project instructions)
@@ -54,12 +103,14 @@ This skill reads `skill.config.md` from its base directory on every invocation.
 | Shorthand | Config field | Default |
 |-----------|-------------|---------|
 | `{plans_dir}` | Plans Directory → plans_dir | `project_plans` |
-| `{system_plan_dir}` | System Plan Mirror → system_plan_dir | `~/.claude/plans` |
+| `{system_plan_dir}` | System Plan Mirror → system_plan_dir | (empty — mirroring disabled) |
 | `{tracker_cli}` | Issue Tracker → cli_command | `bd` |
 | `{tracker_data}` | Issue Tracker → data_dir | `.beads` |
 | `{formatter}` | Formatter → command | (from project instructions) |
 | `{test_command}` | Test Command → command | (from project instructions) |
-| `{execute_skill}` | Companion Skills → execute_skill | `/execute` |
+| `{execute_skill}` | Companion Skills → execute_skill | `execute` |
+| `{skills_dir}` | Skills Directory → skills_dir | `~/.agents/skills` |
+| `{max_file_loc}` | Architecture → max_file_loc | `300` |
 
 **Tracker state:** Read `Issue Tracker → enabled` from config. If `true`, run all `{tracker_cli}` commands in Step 8, Update/Sync, and Complete workflows. If `false`, skip all tracker commands.
 
@@ -69,12 +120,19 @@ This skill reads `skill.config.md` from its base directory on every invocation.
 
 | User intent | Operation | Reference |
 |-------------|-----------|-----------|
-| New feature, fix, refactor, or tech task | **Create** | `references/plan-template.md` |
-| Progress update, phase completion, bug round | **Update** | `references/plan-template.md` (Bug Round Format) |
-| Plan fully done, move to done/ | **Complete** | `references/conventions.md` (Moving to Done) |
+| New feature, fix, refactor, or tech task | **Create** | `references/plan-templates.md` |
+| Progress update, phase completion, bug round | **Update** | `references/update-and-complete.md` + `references/bug-and-completion.md` |
+| Plan fully done, move to done/ | **Complete** | `references/update-and-complete.md` + `references/bug-and-completion.md` |
 
-Read `references/conventions.md` for file naming, directory structure, and project detection.
-Read `references/plan-template.md` for plan templates (single-phase file and multi-phase folder) with all mandatory sections.
+**Path convention:** every file path in this skill and in the files it points at is written **relative to this skill's own directory** — the one holding `SKILL.md`. So `references/x.md` means `<this skill>/references/x.md` even when you read it from inside `references/`, and `../_shared/x.md` means the `_shared` sibling skill. Resolve from the skill root, never from the file you happen to be reading.
+
+Read `references/conventions.md` for file naming, directory structure, type codes, and project detection.
+Read `references/plan-templates.md` for plan templates (single-phase file and multi-phase folder) with all mandatory sections.
+Read `references/task-decomposition.md` for tracker task creation templates (epic + per-phase + single-phase).
+Read `references/bug-and-completion.md` for bug round and completion status formatting.
+Read `references/update-and-complete.md` for the Update and Complete workflows.
+Read `../_shared/architecture-principles.md` for SRP/DRY/KISS/YAGNI rules, hard LOC limits, component decomposition format, anti-patterns to reject, and the architecture self-review checklist. **Required reading before Step 5.**
+Read `../_shared/validators.md` for the repo's validator stages — a plan's Verification sections must name the repo's own `phase-exit` stage, not invented commands. **Required reading before Step 5.**
 
 ---
 
@@ -93,7 +151,15 @@ options: [one per detected candidate project, label = project name, description 
 
 ### Step 2: Gather requirements
 
-**Task file shortcut:** If the user provided a file path as the task source (`.md` file with a task description), read it and treat its content as the full requirements. Store the original content to append as `## Original Task` at the end of the finished plan. When writing the plan (Step 5), single-phase plans overwrite the task file in place; multi-phase plans create a folder at the standard `{plans_dir}/` location and append the original task content to the master plan.
+**Investigation file shortcut:** If the user provided a `.md` file whose path contains `/investigations/` OR whose first line matches `# {Project} Investigation:` OR whose front matter declares `**Status:** ROOT CAUSE CONFIRMED`, treat it as a pre-loaded investigation outcome from the `investigate` skill.
+
+When detected:
+- Read the file. The "Root Cause" + "Approved Fix" + "What changes" + "Side effects checked" sections together are the **already-confirmed requirements** — do not re-investigate, do not ask the user to re-confirm root cause, do not propose alternative fixes.
+- Skip bug-clarification questions in this step. Move straight to scope/sizing questions if needed.
+- **NEVER overwrite the investigation file.** It is reference evidence, not a task scratchpad. The plan file is written at the standard `{plans_dir}/{project}/todo/` location regardless of phase count.
+- In the resulting plan, add a `## Background` section near the top that links to the investigation file with its absolute path. Quote the one-sentence root-cause summary and one-sentence fix summary; do not duplicate the full analysis.
+
+**Task file shortcut (non-investigation):** If the user provided a `.md` file that is NOT an investigation file (per detection above), read it and treat its content as the full requirements. Store the original content to append as `## Original Task` at the end of the finished plan. When writing the plan (Step 5), single-phase plans overwrite the task file in place; multi-phase plans create a folder at the standard `{plans_dir}/` location and append the original task content to the master plan.
 
 Scale question depth to task complexity:
 
@@ -134,7 +200,10 @@ Investigate before writing:
 - File structure and naming patterns
 - Existing tests that need updating
 - API surfaces and data models involved
-- Supported locales: scan for `l10n/`, `*.arb`, `*.strings`, or `Localizable.strings` files. If found, list every locale — all must be updated when user-facing content changes.
+- **Module boundaries** — how the codebase is decomposed (by feature/domain, not by horizontal layer). Identify the natural module home for each new piece of code. See `../_shared/architecture-principles.md` (Modular monolith).
+- **Reusable helpers** — grep for existing utilities, services, or extensions that the new code could call. DRY is enforced at this step — duplicates planned without justification will be rejected during self-review.
+- **File-size hot spots** — read the largest files in the area you'll touch. If any approaches `{max_file_loc}` LOC, plan to split rather than grow.
+- Supported locales: scan for `l10n/`, `locales/`, `i18n/`, `*.arb`, `*.strings`, `Localizable.strings`, `*.xcstrings`, `*.po`/`*.pot`, `*.xliff`/`*.xlf`, `*.resx`, `*.properties`, or per-locale `*.json`/`*.yml`. If found, list every locale — all must be updated when user-facing content changes.
 
 Use available MCP tools when the plan involves external libraries or frameworks:
 - **Context7**: Query documentation for APIs, classes, or patterns you're not certain about. Skip for pure internal refactoring or config-only changes.
@@ -142,63 +211,77 @@ Use available MCP tools when the plan involves external libraries or frameworks:
 
 This exploration informs the Implementation, Testing, and Localization sections.
 
-### Step 5: Produce the plan structure
+### Step 5: Structure & decompose
 
-Before writing full detail, draft the **plan structure** — the vertical slice decomposition. This is a lightweight outline that establishes:
-
-1. How many phases (vertical slices) the plan needs
-2. What each phase delivers
-3. Dependencies between phases
-4. Cross-cutting concerns that apply across phases
-
-Calibrate phase count to task scope — see Plan Sizing in `references/plan-template.md`.
+Build the plan in three substeps. Do not proceed to Step 6 until every substep passes its gate.
 
 <audience>
-Write every plan as if it will be handed to a junior engineer who has never touched this codebase. They know the language and framework basics but have zero institutional knowledge and may have poor judgment about what is "obvious." Never leave implied steps. Every step must be self-contained and unambiguous:
-- Name the exact files to open and read before starting the step
-- Point to relevant docs, architecture files, or existing code patterns to study
-- Include a concrete "done when" criterion or verification step for each step
-- Add code snippets or pseudocode for any step involving non-trivial logic
-- Reference the test command and expected output for every testing step
+Write every plan as if handed to a junior engineer with zero institutional knowledge. Every step self-contained: name the exact files to open, point to relevant docs/patterns, include a "done when" criterion, add code snippets for non-trivial logic, reference test command + expected output for testing steps.
 </audience>
 
-Each phase follows the 6-step vertical slice order: Exploration → Tests (TDD, written to fail) → Implementation (makes tests pass) → Integration tests → Documentation → Polish. See templates in `references/plan-template.md`.
+#### 5.1 Draft the slice structure
 
-Generate the plan using the appropriate template from `references/plan-template.md`:
+Outline phases (vertical slices), what each delivers, dependencies, cross-cutting concerns. Calibrate phase count to scope — see Plan Sizing in `references/plan-templates.md`. Each phase follows 6-step order: Exploration → Tests (TDD, written to fail) → Implementation → Integration tests → Documentation → Polish.
+
+Pick the output shape from `references/plan-templates.md`. Decide it here; the files themselves are written in Step 7b, after the user approves:
 - **1 phase:** single-phase template → single `.md` file
-- **2+ phases:** multi-phase templates → folder with `plan.md` (master) + `phase_N_{slug}.md` (slice per phase)
+- **2+ phases:** multi-phase templates → folder with `plan.md` + `phase_N_{slug}.md` per slice
+
+Steps 5 and 6 produce the outline in conversation, not on disk: phases, per-phase objective and steps, components, files, tests, docs, dependencies, success criteria. Nothing is written until approval.
 
 <plan-output-rules>
-**Single-phase plans (1 phase):**
-- **If a task file was detected in Step 0:** overwrite that file with the full plan. Append `## Original Task` at the very end with the original content verbatim. Still create the system plan file at `{system_plan_dir}/{slug}.md` pointing to the task file's path.
-- **Otherwise:** write to `{plans_dir}/{project}/todo/{filename}.md` following naming conventions from `references/conventions.md`. Create a system plan file at `{system_plan_dir}/{slug}.md` with a link to the project plan. Link from the project plan back to the system plan file.
+These rules govern the write in Step 7b — where each file goes and what must never be overwritten.
 
-**Multi-phase plans (2+ phases):**
-- Create folder `{plans_dir}/{project}/todo/{foldername}/` following naming conventions from `references/conventions.md`.
-- Write `plan.md` (master plan) inside the folder — shared context, dependency table, progress dashboard. No implementation detail or code snippets.
-- Write one `phase_{N}_{slug}.md` (slice file) per phase — self-contained implementation detail, code snippets, tests, docs.
-- Create system plan file at `{system_plan_dir}/{slug}.md` pointing to `{folder}/plan.md`.
-- Link from the master plan back to the system plan file.
-- **If a task file was detected in Step 0:** create the folder at the standard `{plans_dir}/` location. Append the original task file content as `## Original Task` at the end of the master plan.
+**Mirror writes are conditional.** Every "create system plan file" instruction below applies only when `{system_plan_dir}` is non-empty in config. When it is empty, mirroring is off: skip the mirror file, skip its back-link, and say nothing about it. The plan file under `{plans_dir}` is the source of truth either way — a missing mirror is a configuration choice, never a gap to report.
 
+**Single-phase plans:**
+- **If an investigation file was detected in Step 2:** do NOT overwrite the investigation file. Write the plan to `{plans_dir}/{project}/todo/{filename}.md` per `references/conventions.md`. Add a `## Background` section linking to the investigation file (absolute path). Create system plan file at `{system_plan_dir}/{slug}.md`. Link both ways.
+- **Else if a task file was detected in Step 2:** overwrite that file. Append `## Original Task` at end with original content verbatim. Create system plan file at `{system_plan_dir}/{slug}.md` pointing to task file path.
+- **Otherwise:** write to `{plans_dir}/{project}/todo/{filename}.md` per `references/conventions.md`. Create system plan file at `{system_plan_dir}/{slug}.md`. Link both ways.
+
+**Multi-phase plans:**
+- Create folder `{plans_dir}/{project}/todo/{foldername}/` per `references/conventions.md`.
+- `plan.md` (master) — shared context, dependency table, progress dashboard. No code snippets.
+- `phase_{N}_{slug}.md` per phase — self-contained implementation detail.
+- Create system plan file at `{system_plan_dir}/{slug}.md` pointing to `{folder}/plan.md`. Link from master back.
+- **If an investigation file was detected in Step 2:** do NOT overwrite or move the investigation file. Add a `## Background` section to the master plan linking to it (absolute path).
+- **Else if a task file was detected in Step 2:** append its content as `## Original Task` at end of master.
 </plan-output-rules>
 
-### Step 5b: Re-slice oversized phases
+#### 5.2 Re-slice oversized phases
 
-After drafting all slice files, count the implementation steps and distinct files per phase. Any phase that exceeds **8 implementation steps** or touches **more than 5 unrelated files** is too fat — re-slice it before continuing.
+A phase must be re-sliced when **any** trigger fires:
 
-**How to re-slice:**
-1. Identify the natural boundaries inside the oversized phase (platform, layer, concern).
-2. Split into thinner phases, each independently shippable and testable.
-3. Update the dependency table — new phases may depend on the original or on each other.
-4. Re-number subsequent phases and update all cross-references.
+- More than **8 implementation steps**
+- Touches more than **5 unrelated files**
+- Grows any single file past `{max_file_loc}` LOC
+- Spans more than **one feature/domain module** without explicit cross-cutting justification
+- Introduces a god object, horizontal-layer folder, or catch-all file (see anti-patterns in `../_shared/architecture-principles.md`)
 
-**Common split patterns:**
-- **Multi-platform work:** one phase per platform (Dart API, Android, iOS, Web). Each platform slice includes its own tests and is shippable on its own.
-- **API + consumers:** one phase for the API/interface layer, one for each major consumer.
-- **Core + periphery:** one phase for the core logic change, one for docs/example app/integration tests that depend on it.
+**How to re-slice:** identify natural boundaries (feature/domain module, platform, API vs. consumer) → split into thinner shippable phases → update dependency table → renumber and fix cross-references.
 
-Do not proceed to self-review until every phase is within the thresholds.
+**Common split patterns:** by feature module (preferred), by platform (Dart/Android/iOS/Web), API + consumers, core + periphery (docs/example/integration tests).
+
+**Gate:** every phase within all thresholds before proceeding to 5.3.
+
+#### 5.3 Component decomposition
+
+For every phase, list atomic components before drafting code-level steps. Capture per component:
+- **Name** — module/file path (must satisfy Meaningfulness Test #1)
+- **Responsibility** — single sentence, no "and"
+- **Public API** — exported symbols
+- **Callers** — ≥2 unrelated callers, OR `single-caller + independent test` with the test file named
+- **Foreign modules touched** — feature/domain modules the behavior reaches (coupling enumeration, not import lines)
+- **Projected LOC** — under `{max_file_loc}` (or note the waiver and the alternative considered)
+- **Test approach** — unit-testable in isolation
+
+Render as **Component Decomposition** table in the plan (or each slice file). See `references/plan-templates.md`.
+
+**Reject and split when:** responsibility needs "and"; LOC exceeds `{max_file_loc}` without `**LOC waiver:**`; coupling enumeration touches >5 distinct foreign feature/domain modules without a `**coupling waiver:**`; not unit-testable without globals/statics/singleton resets; parallel hierarchies (always-changed-together — fold into one); name is `*Manager`/`*Helper`/`*Util` without concrete domain prefix.
+
+**Reject the split itself when:** the proposed new module fails the Meaningfulness Test (independent name, plural callers or independent test, real coupling reduction, survives inline-back). Re-export shims, barrel indexes, dependency aggregators, and single-caller satellites are anti-patterns — fold them back and take a waiver instead.
+
+**Gate:** every component passes before proceeding to Step 6.
 
 ### Step 6: Self-review and refine
 
@@ -207,9 +290,10 @@ Before presenting the plan to the user, re-read the full draft and challenge it 
 <self-review-checklist>
 **Structure**
 - [ ] Every phase has all 6 steps (exploration → tests → impl → integration → docs → polish)?
-- [ ] Every phase has ≤8 implementation steps and touches ≤5 unrelated files? If not, re-slice (Step 5b).
+- [ ] Every phase has ≤8 implementation steps and touches ≤5 unrelated files? If not, re-slice (Step 5.2).
 - [ ] Dependency table present and acyclic?
 - [ ] Folder structure correct for phase count (single file vs. folder)?
+- [ ] Every phase's Verification section names `./validate run phase-exit` (and the repo has a `validators.conf`, or the plan schedules writing one)?
 - [ ] Slice files have `**Parent plan:**`, `**Beads task:**`, `## Prerequisites`?
 
 **Completeness**
@@ -223,6 +307,8 @@ Before presenting the plan to the user, re-read the full draft and challenge it 
 - [ ] Test coverage: unit for new paths, regression for changed paths, integration for flows?
 - [ ] Each step: concrete file path, "done when" criterion, single atomic action?
 - [ ] Code snippets present for non-trivial logic?
+
+**Architecture** — run the full Architecture self-review checklist in `../_shared/architecture-principles.md`. Every item must pass. If exploration (Step 4) found pre-existing violations in files this plan will touch, schedule their fix within the plan — do not defer or exempt them. "It was already there" is never grounds to leave a violation unaddressed.
 
 **Tracker**
 - [ ] Phase titles usable as task titles?
@@ -262,11 +348,27 @@ options:
     description: "Let's discuss the approach before continuing."
 ```
 
-**If "Looks good":** Finalize the plan file and proceed to Step 8.
+**If "Looks good":** proceed to Step 7b to write the files, then Step 8.
 
 **If any other option (or Other):** Collect the user's feedback, apply changes to the plan, re-run Step 6 self-review, and repeat Step 7. This loop continues until the user selects "Looks good."
 
 **Important:** This question must be asked after every fully completed cycle of working on the plan — including after revisions. Never skip the approval step.
+
+### Step 7b: Write the plan files
+
+Only now do files get created, following `<plan-output-rules>` and the templates in `references/plan-templates.md`.
+
+**Single-phase plans:** write the file yourself. It is one file and you already hold the outline.
+
+**Multi-phase plans:** write `plan.md` yourself — objective, requirements, dependency table, `## Progress` dashboard, success criteria, `## Background`/`## Original Task` where they apply, and the system mirror file. The slice files are delegated **one subagent per slice, all dispatched in parallel in a single batch**, when project instructions permit it. Parallel is safe and is the point here: each writes one independent file, the content is already approved, and none of them touches git, the tracker, or source. Sequential slice writing wastes wall-clock for no gain.
+
+When delegating slices:
+- Give each subagent exactly one slice path plus that phase's approved outline verbatim: objective, steps, component decomposition rows, files, tests, docs, dependencies, success criteria, and the `**Parent plan:**` link to write.
+- Name the instruction files it must read first, by absolute path, and the slice template location.
+- Nothing else is delegated: no tracker commands, no source edits, no master-plan edits. A subagent cannot ask the user — it escalates to you and stops.
+- When the slices come back, verify each one before Step 8: correct path and file name, H1 `# Phase {N}: {Name}`, `**Status:**`, `**Parent plan:**`, `## Prerequisites`, `## Implementation Progress` checkboxes, a Component Decomposition table, and every mandatory per-phase deliverable the project requires (localization, docs, example app, integration tests). Fix or send back anything missing — you own the result.
+
+Either way, re-run the Structure items of the Step 6 checklist against the files on disk once they exist, then proceed to Step 8.
 
 ### Step 8: Task decomposition
 
@@ -298,7 +400,7 @@ If "Skip": end the Create workflow. The plan .md file stands alone.
 
 #### Step 8b: Create tracker tasks
 
-Use the Task Decomposition Template from `references/plan-template.md` to create tasks.
+Use the Task Decomposition Template from `references/task-decomposition.md` to create tasks.
 
 <tracker-notes-requirement>
 **CRITICAL — `--notes` is mandatory on every `{tracker_cli} create` call.** The `--notes` flag is the only way the execution skill and other tools find the plan files from a tracker task. Without it, the task is an orphan — there is no link back to the implementation detail.
@@ -349,6 +451,15 @@ After creating tracker tasks, verify the notes were set correctly, then update p
 
 **Verify:** Run `{tracker_cli} show {task-id}` for each created task and confirm the output includes the `NOTES` section with the absolute path to the slice file. If any task is missing notes, run `{tracker_cli} update {task-id} --notes "..."` to fix it before proceeding.
 
+**Close out the source bead.** A bead that motivated this plan is still marked `needs-plan`, so `{tracker_cli} ready` keeps hiding it. Resolve its ID from the investigation file's `**Beads task:**` field, or from the ID the user invoked this skill with, then flip it:
+
+```sh
+{tracker_cli} update <id> --status open --notes "Plan: {absolute path}/plan.md
+<existing notes, preserved>"
+```
+
+For a multi-phase plan, flip the source bead only when it *is* the epic; otherwise link it with `{tracker_cli} dep add` and flip it anyway. Never leave a bead marked once its plan file exists — status and plan file always move together.
+
 **Update plan files:**
 1. Master plan's `## Beads` section — add epic and task IDs
 2. Master plan's `## Progress` section — add task IDs next to each phase link
@@ -373,7 +484,7 @@ options:
     description: "Stop here. Start implementing later with {execute_skill}."
 ```
 
-If "Start executing now": Invoke `{execute_skill}` with the plan file path. For multi-phase plans, pass the master plan path (`{folder}/plan.md`) — the execute skill resolves to the first ready phase. For single-phase plans, pass the plan file path directly.
+If "Start executing now": invoke the `{execute_skill}` skill (see *Invoking companion skills*) with the plan file path. For multi-phase plans, pass the master plan path (`{folder}/plan.md`) — the execute skill resolves to the first ready phase. For single-phase plans, pass the plan file path directly.
 
 If "Not now": End the Create workflow.
 
@@ -381,110 +492,9 @@ If "Not now": End the Create workflow.
 
 ---
 
-## Update Workflow
+## Update & Complete Workflows
 
-### Step 1: Locate the plan
-
-Find the plan via (in priority order):
-1. User provides the file name or path
-2. Search `{plans_dir}/{project}/todo/` matching conversation context — check both `.md` files and folder names
-3. If ambiguous — use `AskUserQuestion` with plan names as options (label = name, description = full path). Limit to 4; if more exist, show the 4 most recently modified and note in the question text that others were omitted.
-
-For multi-phase plans (folders), the master plan is at `{folder}/plan.md`. Phase-specific updates target the relevant slice file `{folder}/phase_N_{slug}.md`.
-
-### Step 2: Determine what changed
-
-Infer from context first (completed phases, files mentioned, errors described). If unclear, use `AskUserQuestion`:
-```
-question: "What needs to be recorded in the plan?"
-header: "Update type"
-multiSelect: true
-options:
-  - label: "Phase completed"
-    description: "Mark steps [x] and add ✅ COMPLETED to a phase header."
-  - label: "Bug found / bug round"
-    description: "Add a Bug Round section with root cause and fix."
-  - label: "Files added or modified"
-    description: "Update the Files Created / Files Modified sections."
-  - label: "Plan needs restructuring"
-    description: "Add phases, reorder steps, or revise scope."
-```
-
-Follow up with specific questions (also via `AskUserQuestion`) only for the selected update types.
-
-### Step 3: Apply updates
-
-<update-rules>
-- Mark completed steps with `[x]`
-- Add ✅ COMPLETED and date to finished phase headers
-- Add bug round sections: `## Bug Round N: {description}` with sub-items for root cause, fix, and regression test
-- Add files to "Files Created" or "Files Modified" sections
-- Update dates on phase completion headers
-- Never remove existing content — append or modify status markers only
-
-**Multi-phase plan specifics:**
-- Phase completion: update the slice file status to `✅ COMPLETED — {YYYY-MM-DD}` AND mark the corresponding line in the master plan's `## Progress` section with `[x]`
-- Bug rounds: append to the affected **slice file**, not the master plan
-- Files created/modified: update both the slice file (phase-specific) and master plan (consolidated)
-</update-rules>
-
-**Restructuring: single-file to folder conversion**
-
-If restructuring adds phases to a single-file plan (making it multi-phase): create the folder at `{plans_dir}/{project}/todo/{foldername}/`, extract shared context into `plan.md`, move implementation detail into `phase_1_{slug}.md`, create new `phase_N_{slug}.md` files for added phases, update the system plan pointer to `{folder}/plan.md`, and create a tracker epic if the project uses task tracking.
-
-### Step 3b: Check for missing tracker decomposition
-
-If the project uses task tracking (check the tracker declaration in the project's agent instructions or a `{tracker_data}/` directory) and the plan has no `## Beads` section (or the section is empty with no task IDs):
-
-Use `AskUserQuestion`:
-```
-question: "This plan has no tracker tasks yet. Want to create them now?"
-header: "Task tracking"
-options:
-  - label: "Yes, create tracker tasks (Recommended)"
-    description: "Create a tracker epic and tasks matching the plan's phases."
-  - label: "Not now"
-    description: "Skip task tracking for now."
-```
-
-If "Yes": follow Step 8b from the Create workflow to create the tracker tasks, then update the plan's `## Beads` section.
-If "Not now": continue with Step 4.
-
-### Step 4: Sync tracker (if applicable)
-
-If the project has task tracking initialized and the plan's `## Beads` section contains task IDs:
-- **Phase completed:** Run `{tracker_cli} close {task-id}` for the completed phase's task.
-- **Bug round added:** Run `{tracker_cli} note {task-id} "Bug round {N}: {short description}"` on the affected task.
-- **Plan restructured (phases added/removed):** Create or close tracker tasks to match. Update the plan's `## Beads` table.
-
----
-
-## Complete Workflow
-
-### Step 1: Update status
-Set `**Status:** ✅ COMPLETED — {YYYY-MM-DD}`. For multi-phase plans, also update status in each slice file and mark all progress lines with `[x]` in the master plan (see Completion Format in `references/plan-template.md`).
-
-### Step 2: Verify progress
-Confirm all Implementation Progress checkboxes are checked. For multi-phase plans, check across all slice files.
-
-### Step 3: Verify files
-Confirm Files Created/Modified sections are complete.
-
-### Step 4: Verify success criteria
-Confirm all Success Criteria checkboxes are checked.
-
-### Step 5: Move the plan
-- Single-file: move `{plans_dir}/{project}/todo/{file}.md` → `{plans_dir}/{project}/done/{file}.md`
-- Folder: move `{plans_dir}/{project}/todo/{folder}/` → `{plans_dir}/{project}/done/{folder}/`
-
-### Step 6: Update system plan
-Update `{system_plan_dir}/{slug}.md` link if it references the old `todo/` path.
-
-### Step 7: Close tracker tasks
-If the plan's `## Beads` section contains task IDs:
-1. Close all child tasks first: `{tracker_cli} close {task-id}` for each.
-2. Close the epic (if one exists): `{tracker_cli} close {epic-id}`.
-3. If the `## Beads` section is empty or missing, skip — the plan predates task tracking.
+Full step-by-step workflows for **Update** (locate plan → determine what changed → apply updates → check missing tracker decomposition → sync tracker) and **Complete** (status → verify progress/files/success criteria → move to done/ → update system plan → close tracker tasks) are in `references/update-and-complete.md`. Read it when invoking either operation.
 
 ---
 
@@ -492,22 +502,12 @@ If the plan's `## Beads` section contains task IDs:
 
 <constraints>
 **Critical — MUST follow:**
-- MUST structure every plan as vertical slices following the 6-step order in `references/plan-template.md`.
-- MUST use folder structure for multi-phase plans: `plan.md` for shared context, `phase_N_{slug}.md` for implementation detail. Single-phase plans use a single file.
-- MUST follow TDD: write tests first → confirm they fail → implement → confirm they pass. Never write implementation before tests.
-- MUST sync task tracking when updating or completing plans — close tasks for completed phases, add notes for bug rounds, close epic on completion.
-- Plan files are the single source of truth for TODOs. Never put TODO comments in code.
+1. MUST follow TDD: write tests first → confirm they fail → implement → confirm they pass. Never write implementation before tests.
+2. MUST structure every plan as vertical slices, 6-step order. Multi-phase ⇒ folder (`plan.md` + `phase_N_{slug}.md`); single-phase ⇒ single file.
+3. MUST produce a Component Decomposition table per phase. Every component: single-sentence responsibility (no "and"), ≤ `{max_file_loc}` LOC (or `**LOC waiver:**`), unit-testable in isolation.
+4. MUST sync task tracking on update/complete — close phase tasks, note bug rounds, close epic on completion.
+5. Plan files are the single source of truth for TODOs. Never put TODO comments in code.
 
-**Required:**
-- Multi-phase plans include a dependency table. One plan per task — no umbrella plans.
-- Slice files own implementation detail; master plan owns shared context. Tracker tasks reference these files but never duplicate code snippets.
-- Record task IDs in the master plan's `## Beads` section and each slice file's `**Beads task:**` field.
-- Always check if a plan already exists before creating a new one.
-- System plan files at `{system_plan_dir}/` are pointers only.
-- Update project documentation in `{project}/docs/` in every phase.
-- Follow DRY: reference existing code, never plan duplicates.
-- Follow YAGNI: every step must trace to a stated requirement.
-- Include regression tests for changes to existing code. Achieve 100% coverage of modified paths.
-- Include integration tests for complete app-level flows.
-- Check for supported locales during exploration. When user-facing strings change, include all locales. English baseline first, native speaker role for others.
+Full architecture rules (SRP/DRY/KISS/YAGNI, modular monolith, anti-patterns, testability) → `../_shared/architecture-principles.md`.
+Full coverage rules (regression, integration, locales, docs) → `references/plan-templates.md` (Testing & Localization sections).
 </constraints>

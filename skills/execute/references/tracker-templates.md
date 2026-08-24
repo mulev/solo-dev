@@ -70,7 +70,7 @@ options:
   - label: "Pick a plan file to execute"
     description: "Fall back to selecting a .md plan from {plans_dir}/{project}/todo/."
   - label: "Create a plan first"
-    description: "Invoke {plan_skill} to create a plan and decompose it into tracker tasks."
+    description: "Invoke the {plan_skill} skill to create a plan and decompose it into tracker tasks."
 ```
 
 **All tasks blocked:**
@@ -88,7 +88,7 @@ options:
 
 **All tasks closed:**
 ```
-"All tracker tasks in {project} are closed — nothing to execute. Create new work with {plan_skill}."
+"All tracker tasks in {project} are closed — nothing to execute. Create new work with the {plan_skill} skill."
 ```
 
 ---
@@ -110,6 +110,10 @@ Check the returned status:
 | `blocked` | Show blockers: `{tracker_cli} dep list {id}`. Ask user if they want to force-start or pick a different task |
 | `deferred` | Show defer date. Ask user if they want to un-defer and start, or pick a different task |
 | `closed` | Error: "Task {id} is already closed. Nothing to execute." |
+
+### Epic check — run before extracting the plan path
+
+If `{tracker_cli} show {id}` prints a CHILDREN block, this is an **epic**: stop here and follow `<epic-dispatch-mode>` in `SKILL.md`, which asks the user whether to dispatch the whole epic or run one phase. An epic's notes carry `Plan:` pointing at the **master** plan, so the resolution rules below would otherwise silently reduce a multi-phase epic to a single-phase working file.
 
 ### Extract plan file from notes
 
@@ -197,7 +201,7 @@ question: "This plan has no tracker tasks. How do you want to proceed?"
 header: "No tracker"
 options:
   - label: "Create tracker tasks from the plan (Recommended)"
-    description: "Invoke {plan_skill} to decompose this plan into tracker tasks, then execute."
+    description: "Invoke the {plan_skill} skill to decompose this plan into tracker tasks, then execute."
   - label: "Execute without tracker"
     description: "Work directly from the plan file — no tracker tracking or dependency management."
 ```
@@ -272,12 +276,12 @@ question: "Task {id} has no linked plan file. A plan is required before executio
 header: "No plan"
 options:
   - label: "Create a plan from this task (Recommended)"
-    description: "Invoke {plan_skill} using the task description as requirements. The plan will be linked back to this task."
+    description: "Invoke the {plan_skill} skill using the task description as requirements. The plan will be linked back to this task."
   - label: "Cancel"
     description: "Don't execute. Add a plan file reference manually first."
 ```
 
-If "Create a plan": invoke `{plan_skill}` with the task description as the task source. After the plan is created, update the tracker task notes to reference the plan files:
+If "Create a plan": invoke the `{plan_skill}` skill (see *Invoking companion skills* in `SKILL.md`) with the task description as the task source. After the plan is created, update the tracker task notes to reference the plan files:
 
 **If the planning skill created a single-phase plan:**
 ```bash
@@ -305,7 +309,7 @@ question: "Task {id} references plan file '{path}' but the file doesn't exist. W
 header: "Missing plan"
 options:
   - label: "Create a new plan for this task (Recommended)"
-    description: "Invoke {plan_skill} using the task description as requirements. Overwrites the missing file path."
+    description: "Invoke the {plan_skill} skill using the task description as requirements. Overwrites the missing file path."
   - label: "Cancel"
     description: "Don't execute. Investigate the missing file first."
 ```
@@ -332,3 +336,13 @@ Multi-phase slice file (flat checklist):
 ```
 "Resuming task {id} — Phase {N} is partially complete ({done}/{total} tasks done). Continuing from next unchecked task."
 ```
+
+---
+
+## Lifecycle Rules
+
+These complement the Task Lifecycle Commands above:
+
+- **Close immediately** — close the tracker task as soon as its phase completes. This unblocks dependent tasks as early as possible. Run `{tracker_cli} epic close-eligible` after every child closure and close the parent epic when all children are done. Never leave a "all children done, epic still open" state behind — Step 5 treats it as a failed gate, so confirm with `{tracker_cli} show {epic-id}` rather than assuming the auto-close fired.
+- **Partial completion** — when the user picks "Stop here" mid-phase, leave the task as `in_progress`. Do NOT close or revert status. The next invocation resumes from the first unchecked step.
+- **Refactoring Rounds** — architecture-gate violations are tracked as Refactoring Rounds in the working file, separate from Bug Rounds. Refactoring commits use the `refactor:` prefix and never bundle with feature work.

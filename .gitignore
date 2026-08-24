@@ -1,2 +1,5 @@
 # Skill configuration (user-specific — use skill.config.example.md as template)
 **/skill.config.md
+
+# macOS
+.DS_Store

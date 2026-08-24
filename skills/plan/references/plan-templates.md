@@ -1,6 +1,10 @@
-# Plan Template
+# Plan Templates
 
-Use this template for all new plans. Every section is mandatory. Replace placeholders in `{braces}` with actual values.
+Templates for plan markdown files. Every section is mandatory unless explicitly noted. Replace placeholders in `{braces}` with actual values.
+
+For type values (Feature/Fix/Refactor/Tech/Docs/Epic) → `references/conventions.md` (Type Codes & Values).
+For task decomposition → `references/task-decomposition.md`.
+For bug rounds & completion formatting → `references/bug-and-completion.md`.
 
 ---
 
@@ -65,6 +69,12 @@ Each phase is independently shippable, stays under the thresholds, and takes min
 
 ---
 
+## Substitution rules
+
+Templates use shorthand placeholders inside braces — `{max_file_loc}`, `{plans_dir}`, `{project}`, `{system_plan_dir}`, `{tracker_cli}`, `{formatter}`, `{test_command}`, `{skills_dir}`. These resolve from `skill.config.md` at write time. **Substitute every placeholder when writing a real plan file.** A rendered plan must not contain literal `{...}` shorthand outside of fenced code blocks where the shorthand is the subject of explanation. If you find yourself writing `{max_file_loc}` into a plan file's body, stop and replace it with the resolved integer.
+
+---
+
 ## Single-Phase Plan Template
 
 For plans with exactly one vertical slice. Produces a single `.md` file, not a folder.
@@ -74,6 +84,30 @@ For plans with exactly one vertical slice. Produces a single `.md` file, not a f
 
 **Status:** 🔄 IN PROGRESS
 **System plan file:** {path to {system_plan_dir}/slug.md}
+
+## Background
+
+<!-- OMIT this section when the plan was NOT created from an investigation. -->
+<!-- INCLUDE it when an investigation file was detected in Step 2. -->
+**Investigation:** {absolute path to {plans_dir}/{project}/investigations/{file}.md}
+**Root cause (1 sentence):** {copy verbatim from investigation Root Cause section}
+**Approved fix (1 sentence):** {copy verbatim from investigation Approved Fix → Summary}
+
+Read the investigation file for the full execution chain, supporting evidence, ruled-out hypotheses, and side-effect notes. Do not duplicate that content here.
+
+## Component Decomposition
+
+Atomic units this plan creates or modifies. Each component owns one logical action, passes the Meaningfulness Test, and is unit-testable in isolation. The smell threshold is ≤`{max_file_loc}` LOC — beyond that, either split (if every candidate split passes the Meaningfulness Test) or take a `**LOC waiver:**`. See `../_shared/architecture-principles.md`.
+
+| Component | Responsibility (one sentence, no "and") | Public API | Callers (≥2 OR single-caller + own test) | Foreign modules touched | Projected LOC | Test approach |
+|-----------|------------------------------------------|------------|------------------------------------------|-------------------------|---------------|---------------|
+| `{path/to/module.ext}` | {single responsibility} | `{exported symbols}` | `{caller A}`, `{caller B}` | `{module X}`, `{module Y}` | {N} | {how to unit-test in isolation} |
+
+**LOC waivers** (when a component legitimately exceeds `{max_file_loc}` and every candidate split fails the Meaningfulness Test):
+- `{path/to/file}` — projected {N} LOC. Reason: {generated parser / exhaustive enum / cohesive state machine}. Alternatives considered: {list}.
+
+**Coupling waivers** (when behavior legitimately spans >5 foreign feature modules):
+- `{path/to/file}` — touches {N} foreign modules: {list}. Reason: {orchestration boundary / integration shim with no further decomposition}. Splits ruled out because: {failed Meaningfulness Test condition}.
 
 ## Implementation Progress
 
@@ -128,6 +162,7 @@ For plans with exactly one vertical slice. Produces a single `.md` file, not a f
 
 - [ ] Run the configured formatter (`{formatter}`). Done when no changes.
 - [ ] Run `{test command}` one final time. Done when "TESTS PASSED".
+- [ ] Run the architecture gate on every changed file (`git diff --name-only`) and write the `## Architecture Gate Results` block into this plan file. See `../execute/references/update-format.md` (Adding the Architecture Gate Results). Done when the block exists with **Overall: PASS** and every row PASS.
 
 ---
 
@@ -202,6 +237,9 @@ For each non-English locale: adopt the role of a native speaker to produce natur
 - [ ] {Manual verification step 1}
 - [ ] {Manual verification step 2}
 
+### Phase exit
+- Run from the repo root: `./validate run phase-exit` — every row PASS, output pasted into the `### Validation` block of this file's `## Architecture Gate Results`, then `./validate verify phase-exit {this file}` exits 0. See `../_shared/validators.md`.
+
 ## Success Criteria
 
 - [ ] {Measurable outcome 1}
@@ -214,9 +252,10 @@ For each non-English locale: adopt the role of a native speaker to produce natur
 
 ## Files Created
 
-{Leave empty initially. Fill in during Update workflow as files are created.}
+{Leave empty initially. Fill in during Update workflow as files are created. Always record LOC — every entry must show a count and stay ≤ `{max_file_loc}` unless explicitly waived.}
 
 - `{path}` ({line count} lines) — {brief description}
+- `{path}` ({line count} lines) — {description}. **LOC waiver:** {reason} — alternatives considered: {list}
 
 ## Files Modified
 
@@ -251,6 +290,16 @@ The master plan holds shared context — objective, requirements, dependency tab
 
 {Brief paragraph describing the overall epic scope and how slices relate to each other.}
 
+## Background
+
+<!-- OMIT this section when the plan was NOT created from an investigation. -->
+<!-- INCLUDE it when an investigation file was detected in Step 2. -->
+**Investigation:** {absolute path to {plans_dir}/{project}/investigations/{file}.md}
+**Root cause (1 sentence):** {copy verbatim from investigation Root Cause section}
+**Approved fix (1 sentence):** {copy verbatim from investigation Approved Fix → Summary}
+
+Read the investigation file for the full execution chain, supporting evidence, ruled-out hypotheses, and side-effect notes. Slice files do not need to re-quote this — link back to the investigation when relevant.
+
 ## Dependency Table
 
 | Phase | Scope | Depends on | Slice |
@@ -258,6 +307,16 @@ The master plan holds shared context — objective, requirements, dependency tab
 | **1: {Slice name}** | {Brief scope} | — | [phase_1_{slug}.md](phase_1_{slug}.md) |
 | **2: {Slice name}** | {Brief scope} | Phase 1 | [phase_2_{slug}.md](phase_2_{slug}.md) |
 | **N: {Slice name}** | {Brief scope} | Phase 1 | [phase_N_{slug}.md](phase_N_{slug}.md) |
+
+## Architecture Boundaries
+
+Modular-monolith placement for code introduced by this epic. See `../_shared/architecture-principles.md`.
+
+- **Feature/domain modules touched:** {e.g., `lib/features/reader/`, `lib/features/library/`}
+- **New modules introduced:** {list, with single-sentence responsibility each — or "None"}
+- **Public APIs added or changed:** {symbol → consumer module}
+- **Existing helpers reused (DRY):** {symbol → location} — confirms no duplication
+- **Smell thresholds:** every component ≤ `{max_file_loc}` LOC and ≤5 foreign feature modules touched. Waivers listed per slice. Splits driven only by metrics — without passing the Meaningfulness Test — are rejected.
 
 ## Cross-Cutting Concerns
 
@@ -272,6 +331,14 @@ The master plan holds shared context — objective, requirements, dependency tab
 - [ ] [Phase 1: {Slice name}](phase_1_{slug}.md) — `{task-id}`
 - [ ] [Phase 2: {Slice name}](phase_2_{slug}.md) — `{task-id}`
 - [ ] [Phase N: {Slice name}](phase_N_{slug}.md) — `{task-id}`
+
+## Dispatch Log
+
+{Filled during execution when phases are delegated. This table is the epic's state on disk — after a compaction it is how the main session knows where it is, instead of guessing. Baseline row first. `Dispatched` and `Returned` are UTC timestamps to the second (`date -u +%Y-%m-%dT%H:%M:%SZ`), never bare dates or wall-clock times: the row exists to be lined up against that bead's validator ledger header (`started=` / `finished=`), and only a full stamp answers whether the ledger was earned after the dispatch it claims.}
+
+| Bead | Worker | Dispatched | Returned | Commits | Gate | Ledger | Bead state |
+|------|--------|------------|----------|---------|------|--------|------------|
+| — | baseline | `2026-08-19T19:41:27Z` | `2026-08-19T19:50:33Z` | — | — | `validate run phase-exit` 5/5 PASS @ `aaf13fe` | — |
 
 ## Objective
 
@@ -349,6 +416,20 @@ Each slice file is self-contained for execution — a tracker task points to thi
 
 {What prior phases deliver and why it matters for this phase. 2-3 sentences max. Do not duplicate implementation detail — reference the parent plan or prior slice files for full context. For Phase 1 or independent phases, write "None — this phase has no dependencies."}
 
+## Component Decomposition
+
+Atomic units this phase creates or modifies. Each component owns one logical action, passes the Meaningfulness Test, and is unit-testable in isolation. The smell threshold is ≤`{max_file_loc}` LOC — beyond that, either split (if every candidate split passes the Meaningfulness Test) or take a `**LOC waiver:**`. See `../_shared/architecture-principles.md`.
+
+| Component | Responsibility (one sentence, no "and") | Public API | Callers (≥2 OR single-caller + own test) | Foreign modules touched | Projected LOC | Test approach |
+|-----------|------------------------------------------|------------|------------------------------------------|-------------------------|---------------|---------------|
+| `{path/to/module.ext}` | {single responsibility} | `{exported symbols}` | `{caller A}`, `{caller B}` | `{module X}`, `{module Y}` | {N} | {how to unit-test in isolation} |
+
+**LOC waivers** (when a component legitimately exceeds `{max_file_loc}` and every candidate split fails the Meaningfulness Test):
+- `{path/to/file}` — projected {N} LOC. Reason: {generated parser / exhaustive enum / cohesive state machine}. Alternatives considered: {list}.
+
+**Coupling waivers** (when behavior legitimately spans >5 foreign feature modules):
+- `{path/to/file}` — touches {N} foreign modules: {list}. Reason: {orchestration boundary / integration shim}. Splits ruled out because: {failed Meaningfulness Test condition}.
+
 ## Implementation Progress
 
 - [ ] Read `{file}` — understand {what}. Done when you can describe {specific knowledge}.
@@ -357,6 +438,7 @@ Each slice file is self-contained for execution — a tracker task points to thi
 - [ ] Add integration test for `{flow}` in `{file}`. Done when test compiles.
 - [ ] Update `{doc_file}` — add section on `{topic}`. Done when saved.
 - [ ] Run `{formatter}` + `{test command}`. Done when clean + "TESTS PASSED".
+- [ ] Run the architecture gate on every changed file (`git diff --name-only`) and write the `## Architecture Gate Results` block into this slice file. See `../execute/references/update-format.md` (Adding the Architecture Gate Results). Done when the block exists with **Overall: PASS** and every row PASS.
 
 ## Implementation
 
@@ -397,8 +479,8 @@ Describe all tests BEFORE writing any implementation code. TDD red-green cycle i
 
 ## Verification
 
-- Run: `{test command}`
-- Expected: all phase tests pass
+- TDD inner loop: `{test command}` on the changed test files.
+- Phase exit, run from the repo root: `./validate run phase-exit` — every row PASS, output pasted into this file's `### Validation` block, then `./validate verify phase-exit {this file}` exits 0. See `../_shared/validators.md`.
 
 ## Files Created
 
@@ -411,154 +493,4 @@ Describe all tests BEFORE writing any implementation code. TDD red-green cycle i
 {Leave empty initially. Updated during execution.}
 
 - `{path}` — {what changed}
-```
-
----
-
-## Type Values
-
-Use these labels in the plan header `# {Project} {Type}: {Title}`:
-
-| Type | When to use |
-|------|-------------|
-| Feature | New user-facing capability |
-| Fix | Bug fix |
-| Refactor | Code restructuring without behavior change |
-| Tech | Infrastructure, CI/CD, tooling, dependencies |
-| Docs | Documentation-only changes |
-| Epic | Multi-slice plan spanning multiple independent deliverables |
-
----
-
-## Task Decomposition Template
-
-After the user approves the plan, decompose it into tracker tasks. The plan files remain the source of truth — tracker tasks reference them, not duplicate them.
-
-### Epic (multi-phase plans only)
-
-The epic references the **master plan file** (`plan.md` inside the folder):
-
-```
-{tracker_cli} create "{Plan title}" \
-  --type epic \
-  --priority {0-4} \
-  --description "{1-3 sentence summary of the epic scope}" \
-  --labels {relevant labels} \
-  --notes "Plan: {absolute path to folder/plan.md}
-This epic's master plan contains the dependency table, cross-cutting concerns, and success criteria. Each child task has its own slice file with full implementation detail. Use the execution skill to implement."
-```
-
-### Task per phase
-
-Each task references its **slice file** (`phase_N_{slug}.md`):
-
-```
-{tracker_cli} create "Phase {N}: {Slice name}" \
-  --type {feature|task|bug|chore} \
-  --priority {0-4} \
-  --parent {epic-id} \
-  --labels {relevant labels} \
-  --deps "{dependency-task-id}" \
-  --description "{Summary of what this phase delivers}
-
-Step {N}.1: Exploration
-- [ ] Read {file} — understand {what}
-
-Step {N}.2: Tests (TDD)
-- [ ] Create/update {test file} — {test description}
-- [ ] Run tests — confirm new tests fail
-
-Step {N}.3: Implementation
-- [ ] {Implementation task} in {file}
-- [ ] Run tests — confirm all pass
-
-Step {N}.4: Integration Tests
-- [ ] Add {integration test} in {file}
-
-Step {N}.5: Documentation
-- [ ] Update {doc file}
-
-Step {N}.6: Polish
-- [ ] Run formatter
-- [ ] Run full test suite" \
-  --notes "Slice: {absolute path to folder/phase_N_{slug}.md}
-Master: {absolute path to folder/plan.md}
-Full implementation detail (code snippets, insertion points, done-when criteria) is in the slice file. Use the execution skill to implement."
-```
-
-### Single-phase plans (no epic)
-
-For plans with only one phase, create a single tracker task (not an epic):
-
-```
-{tracker_cli} create "{Plan title}" \
-  --type {feature|task|bug|chore} \
-  --priority {0-4} \
-  --labels {relevant labels} \
-  --description "{Same step checklist format as above}" \
-  --notes "Plan: {absolute path to plan .md}
-Full detail: see plan file. Use the execution skill when implementing."
-```
-
-### Key rules
-
-- **Master plan** (`plan.md`) is the source of truth for shared context — objective, requirements, dependency table, cross-cutting concerns. Referenced by the epic.
-- **Slice files** (`phase_N_{slug}.md`) are the source of truth for implementation detail — code snippets, insertion points, test cases. Referenced by individual tasks.
-- Task descriptions contain **step checklists** — enough to orient from `{tracker_cli} show`, with the slice file pointer for deep detail.
-- Dependencies between tasks must match the dependency table in the master plan.
-- Labels should include the relevant technology/platform (e.g., `ios`, `android`, `web`, `dart`).
-
----
-
-## Bug Round Format
-
-When bugs are discovered during implementation, add a bug round section to the **slice file** of the affected phase (for multi-phase plans) or directly in the plan file (for single-phase plans):
-
-```markdown
-## Bug Round 1: {Short description} — {YYYY-MM-DD}
-
-### Root Cause
-{Explain what went wrong and why.}
-
-### Fix
-- [x] {What was changed}
-- [x] {File modified}
-- [x] {Test added to prevent regression}
-
-### Verification
-- [x] {How the fix was verified}
-```
-
-Multiple rounds are numbered sequentially (Bug Round 1, Bug Round 2, etc.).
-
----
-
-## Completion Format
-
-### Single-phase plans
-
-Update the status line:
-
-```markdown
-**Status:** ✅ COMPLETED — {YYYY-MM-DD}
-```
-
-### Multi-phase plans
-
-Update the **master plan** status:
-
-```markdown
-**Status:** ✅ COMPLETED — {YYYY-MM-DD}
-```
-
-Update each **slice file** status:
-
-```markdown
-**Status:** ✅ COMPLETED — {YYYY-MM-DD}
-```
-
-Mark progress lines in the master plan:
-
-```markdown
-- [x] [Phase 1: {Slice name}](phase_1_{slug}.md) — `{task-id}` ✅ {YYYY-MM-DD}
 ```

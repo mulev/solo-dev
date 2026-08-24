@@ -39,10 +39,59 @@ Debugging is scientific research. Every conclusion requires evidence. Assumption
 When this skill is invoked, **immediately** output the following line before doing anything else — no preamble, no extra text:
 
 ```
-[debug] Investigating...
+[invest] Investigating...
 ```
 
-This is non-negotiable. It must be the very first thing the user sees.
+This is non-negotiable. It must be the very first thing the user sees. Then, before any other tool call, run `ToolSearch(query="select:AskUserQuestion", max_results=1)` (Claude Code only) to cache the question-tool schema for the session.
+
+---
+
+## Conduct
+
+Read `../_shared/agent-conduct.md` before the first tool call of this workflow. It carries the ownership, evidence, verification, shell, localization and scope rules every step below assumes. **Required reading** — its Evidence section is the same standard as the Core principles above, stated once for the whole bundle, and its "genuine blockers are the only acceptable 'I can't'" rule is what separates a dead-end report from a skipped investigation.
+
+---
+
+## Asking the user
+
+Every question you ask the user — clarification, confirmation, choice between options, gate approvals — MUST go through the host's structured-question tool. Plain-text questions are a last-resort fallback only.
+
+**Tool resolution (try in order, first hit wins for the session):**
+
+1. **Claude Code** — `AskUserQuestion`. Deferred tool. Load its schema once per session:
+   ```
+   ToolSearch(query="select:AskUserQuestion", max_results=1)
+   ```
+   If the schema loads, call `AskUserQuestion` directly for the rest of the session.
+2. **Codex CLI (interactive TUI)** — `ask_user_question` (preferred, structured single/multi-choice) or `request_user_input` (free text). Native, no loader. If callable, use it.
+3. **MCP elicitation** — if any connected MCP server exposes `elicitation/create`, use it (form mode with `requestedSchema` for structured choices).
+4. **omp (Oh My Pi)** — `ask`, native, no loader. Emit it as the only tool call in its message; the runtime runs it exclusively. Cancellation raises `ToolAbortError`; headless runs have no `ask`, so use 5 there.
+5. **Fallback** — clearly-formatted numbered plain-text question, then wait for the user's reply. Use only when 1–4 are unavailable (e.g. `codex exec` non-interactive runs strip native question tools).
+
+Verify resolution every session — never assume the prior choice still applies. Batch up to 4 questions per call. Provide likely answers as options; the user picks "Other" for custom input. Gate approvals (Gate 1, Gate 2) MUST use the resolved tool — never proceed past a gate without explicit user approval through it.
+
+**Ask in the same message.** Attach the question call to the message carrying the gate prose. A turn that ends on gate prose has asked nothing — the gate becomes a rhetorical question and the workflow proceeds unapproved.
+
+**Treat a cancelled or timed-out question as the conservative answer.** Take the option that proceeds no further, name it, and stop. A cancellation is never permission to continue.
+
+See `../_shared/tooling-examples.md` for the canonical call shape.
+
+Where the rest of this skill says `AskUserQuestion`, treat it as a placeholder for whichever tool resolved above.
+
+---
+
+## Invoking companion skills
+
+When this skill hands off to another (e.g., `{plan_skill}`, `{execute_skill}`), use the harness's skill-invocation mechanism. Configured shorthands hold the **bare skill name** with no prefix — the prefix is harness convention, never written into config.
+
+Pick the first mechanism available in the current environment:
+
+- **Claude Code:** call the `Skill` tool with `skill: "{plan_skill}"` and pass the handoff payload as `args`. **Text-emitting `Use the {plan_skill} skill.` does NOT invoke the skill on Claude Code** — only the `Skill` tool call triggers invocation. If `Skill` is unavailable but the skill is exposed as a user-runnable slash command, write `/{plan_skill}` as a literal first-line message.
+- **Codex (interactive TUI):** invoke as `${plan_skill}`.
+- **Codex (`codex exec` non-interactive):** the slash-skill invocation is not available — emit the literal sentence `Use the {plan_skill} skill.` as your next assistant message, immediately followed by the handoff payload (OpenAI deterministic-workflow pattern; fuzzy phrasing drops the handoff).
+- **Fallback (any harness):** read `{skills_dir}/{plan_skill}/SKILL.md` directly with `Read` and follow its workflow inline in the current conversation. Pass the handoff context (root cause analysis, approved fix, file list, side effects) as the first message of that inline workflow.
+
+Do not write a literal `/` or `$` inside config values — the harness adds it.
 
 ---
 
@@ -70,15 +119,27 @@ This skill reads `skill.config.md` from its base directory on every invocation.
 
 | Shorthand | Config field | Default |
 |-----------|-------------|---------|
-| `{plan_skill}` | Companion Skills → plan_skill | `/plan` |
-| `{execute_skill}` | Companion Skills → execute_skill | `/execute` |
+| `{plan_skill}` | Companion Skills → plan_skill | `plan` |
+| `{execute_skill}` | Companion Skills → execute_skill | `execute` |
 | `{plans_dir}` | Plans Directory → plans_dir | `project_plans` |
+| `{investigations_subdir}` | Investigations Directory → investigations_subdir | `investigations` |
+| `{skills_dir}` | Skills Directory → skills_dir | `~/.agents/skills` |
+| `{tracker_cli}` | Issue Tracker → cli_command | `bd` |
+| `{tracker_enabled}` | Issue Tracker → enabled | `false` |
+
+The resolved investigations directory is `{plans_dir}/{project}/{investigations_subdir}/`. Create it on first write if missing.
+
+**Tracker state:** read `Issue Tracker → enabled` from config. If `true`, run the `{tracker_cli}` commands in Step 0 and Step 5d. If `false`, skip them and treat every investigation as untracked.
 
 ---
 
 ## Workflow
 
 ### Step 0: Define the problem
+
+**If the user's request is a bare tracker ID** (e.g. `myapp-37h`), that ID is the investigation's subject. Run `{tracker_cli} show <id>` from the repo root that owns the ID's prefix — never from a parent directory — and treat its description and notes as the initial report. Record the ID; Step 5d writes back to it.
+
+A prior investigation referenced in the bead's notes may belong to a *different* bug that merely spawned this one. Read it as context, never as this bead's answer, and never treat a cause the bead's title asserts as already proven.
 
 Gather enough information to begin investigation. Use `AskUserQuestion` if any of these are missing from the user's initial report:
 
@@ -124,6 +185,8 @@ Search the codebase for similar patterns that work correctly. Compare them again
 
 Use parallel tool calls aggressively during evidence collection — read multiple files simultaneously, search in parallel, fetch docs while reading code.
 
+**Parallel research agents are allowed here, and only here.** When separate evidence trails do not depend on each other, dispatch one read-only agent per trail in a single batch — they are read-only, so they cannot collide. They gather and report; they never write, never touch the tracker, and never conclude. The root-cause gate, the ruling on the evidence, and the Step 5 outcome file stay with you.
+
 ### Step 2: Present root cause analysis — GATE 1
 
 Compile your findings into a structured analysis. Present it to the user as a text message with this structure:
@@ -148,25 +211,25 @@ N. {Failure point}: {what goes wrong and why} — *evidence: {file:line or doc r
 </analysis-format>
 
 <example>
-**Problem:** Clicking "Resume" opens the document at the beginning instead of the saved position.
+**Problem:** Tapping "Resume reading" opens the book at page 1 instead of the saved position.
 
 **Execution chain:**
-1. User clicks "Resume" button → calls `EditorBloc.openDocument(docId, resume: true)` — *evidence: `lib/features/documents/widgets/doc_card.dart:142`*
-2. `EditorBloc.openDocument` calls `progressRepository.getLastPosition(docId)` → returns `SavedPosition(cursor: CursorPos(...), updatedAt: ...)` — *evidence: `lib/features/editor/bloc/editor_bloc.dart:87`, confirmed non-null via database query*
-3. `openDocument` passes the position to `viewService.open(document, initialPosition: position)` — *evidence: `editor_bloc.dart:93`*
-4. `ViewService.open` calls `renderer.navigateTo(initialPosition)` — *evidence: `lib/features/editor/services/view_service.dart:41`*
-5. **Failure:** `renderer.navigateTo` receives the position but `renderer` is not yet initialized at this point — `_renderer` is `null`, the call is silently dropped, and the editor falls back to the beginning — *evidence: `view_service.dart:38` shows `_renderer` is set in `onViewReady` callback, which fires asynchronously after `open()` returns*
+1. User taps "Resume reading" button → calls `ReaderBloc.openBook(bookId, resume: true)` — *evidence: `lib/features/library/widgets/book_card.dart:142`*
+2. `ReaderBloc.openBook` calls `progressRepository.getLastPosition(bookId)` → returns `ReadingPosition(locator: Locator(...), updatedAt: ...)` — *evidence: `lib/features/reader/bloc/reader_bloc.dart:87`, confirmed non-null via database query*
+3. `openBook` passes the locator to `readerService.open(publication, initialLocator: locator)` — *evidence: `reader_bloc.dart:93`*
+4. `ReaderService.open` calls `navigator.goTo(initialLocator)` — *evidence: `lib/features/reader/services/reader_service.dart:41`*
+5. **Failure:** `navigator.goTo` receives the locator but `navigator` is not yet initialized at this point — `_navigator` is `null`, the call is silently dropped, and the reader falls back to page 1 — *evidence: `reader_service.dart:38` shows `_navigator` is set in `onReaderReady` callback, which fires asynchronously after `open()` returns*
 
-**Root cause:** `navigateTo(savedPosition)` is called synchronously during `initialize()`, but the renderer is only available after the view finishes setup (`onViewReady`). The position is sent to a null renderer and silently discarded.
+**Root cause:** `goTo(initialLocator)` is called synchronously during `open()`, but the navigator is only available after the reader widget finishes initialization (`onReaderReady`). The locator is sent to a null navigator and silently discarded.
 
 **Supporting evidence:**
-- `view_controller.dart:38`: `_renderer = null` until `onViewReady` assigns it at line 52
-- Framework docs confirm view initialization callbacks are asynchronous and fire after the first frame
-- `view_controller.dart:41`: no null check or queuing mechanism — `_renderer?.navigateTo(position)` uses `?.` which silently no-ops on null
+- `reader_service.dart:38`: `_navigator = null` until `onReaderReady` assigns it at line 52
+- Flutter framework docs confirm widget initialization callbacks are asynchronous and fire after the first frame
+- `reader_service.dart:41`: no null check or queuing mechanism — `_navigator?.goTo(locator)` uses `?.` which silently no-ops on null
 
 **What was ruled out:**
-- Database returning stale/null position: verified via direct SQL query — position is correctly stored and retrieved
-- Position format mismatch: the returned position uses the same `Position` type the renderer expects — confirmed by type analysis
+- Database returning stale/null position: verified via `{tracker_cli} show` and direct SQL query — position is correctly stored and retrieved
+- Locator format mismatch: the returned locator uses the same `Locator` type the navigator expects — confirmed by type analysis
 </example>
 
 After presenting the analysis, use `AskUserQuestion`:
@@ -249,20 +312,143 @@ options:
 
 **If "Yes":** Proceed to Step 5.
 
-### Step 5: Hand off to implementation
+### Step 5: Save investigation outcome to disk
 
-After both gates are passed, hand off to implementation.
+**Why:** Investigations consume large context during evidence collection. Passing the full analysis inline to `{plan_skill}` degrades plan-skill performance and burns budget the planning work needs. Persisting the outcome to a file lets the next session (clean context) run `{plan_skill}` against the saved file.
 
-**If the planning skill is available** (see `{plan_skill}`): Invoke `{plan_skill}` and provide it with the full context:
-- The root cause analysis from Step 2
-- The approved fix from Step 4
-- All files that need to change
-- Side effects that were checked
-- Any related issues discovered during investigation
+This step is **mandatory** before any handoff. Skip only if `{plans_dir}` is empty in config (see *Fallback* in Step 6).
 
-The plan skill handles the execute handoff after creating the plan — do not invoke `{execute_skill}` separately here.
+Writing this file and the Step 5d tracker update are the ONLY exceptions to the "no writes after Gate 2" rule in *Constraints*. Once 5d completes, the no-writes rule resumes — no further Edit/Write/mutating Bash until handoff fires.
 
-**If the planning skill is not available:** Use `AskUserQuestion`:
+**5a. Resolve target path.**
+- Directory: `{plans_dir}/{project}/{investigations_subdir}/` — create if missing (the Write tool creates parent directories automatically).
+- Filename: `{project}_invest_{short_name}.md`
+  - `short_name`: 3–5 lowercase words separated by underscores, derived from the problem statement. Hyphens allowed within a word.
+  - Example: `myapp_invest_resume_locator_dropped.md`
+- If a file with that name already exists in the directory, append `_v2`, `_v3`, … until unique. Do not overwrite — prior investigations are evidence.
+
+**5b. Write the file.** Use the Write tool with this template, filling every bracketed field from Steps 2 and 4. Do not paraphrase the Gate-1 and Gate-2 content — copy it verbatim so the file is self-contained.
+
+<investigation-file-template>
+````markdown
+# {Project} Investigation: {Short title}
+
+**Status:** ROOT CAUSE CONFIRMED — FIX APPROVED
+**Date:** {YYYY-MM-DD from currentDate}
+**Project:** {project}
+**Beads task:** {tracker id, or "none"}
+
+---
+
+## Problem
+
+{one-sentence description from Gate 1}
+
+## Execution Chain
+
+{numbered steps from Gate 1, with evidence citations}
+
+## Root Cause
+
+{precise explanation from Gate 1}
+
+## Supporting Evidence
+
+{evidence items from Gate 1 — quote code, doc passages, log entries verbatim}
+
+## Ruled Out
+
+{alternative hypotheses with evidence for rejection from Gate 1}
+
+---
+
+## Approved Fix
+
+**Summary:** {one-sentence from Gate 2}
+
+**What changes:**
+{file-by-file change list from Gate 2}
+
+**Why this fix is correct:**
+{reasons from Gate 2}
+
+**Side effects checked:**
+{caller/consumer list from Gate 2}
+
+**Not addressed (separate issues):**
+{related-but-separate items from Gate 2, or "none"}
+
+---
+
+## Handoff Instructions
+
+Pass this file path to the planning skill as background context. The planning skill MUST NOT overwrite this file — it MUST create the implementation plan as a separate file under `{plans_dir}/{project}/todo/` and reference this investigation from the plan's Background section.
+````
+</investigation-file-template>
+
+**5c. Confirm the write.** After the Write call returns, present the absolute path to the user as a single line of text, then continue with 5d:
+
+```
+[invest] Saved → {absolute path}
+```
+
+**5d. Write the outcome back to the tracker.** Skip when `{tracker_enabled}` is `false`, or when Step 0 resolved no tracker ID. Otherwise, from the repo root that owns the ID's prefix:
+
+```sh
+{tracker_cli} update <id> --status needs-plan --notes "Investigation: {absolute path}
+Root cause confirmed and fix approved. Use the planning skill to create the implementation plan."
+```
+
+The status stays `needs-plan`: an investigation produces a proven cause, not a plan, so the bead is still not workable — `{plan_skill}` is what flips it to `open`.
+
+If your evidence disproved a cause the bead's title asserts, correct the title in the same call with `--title`. A title that states a wrong cause is worse than one that states only the symptom.
+
+Then add one line to the 5c confirmation, and proceed to Step 6:
+
+```
+[invest] <id> → needs-plan
+```
+
+### Step 6: Hand off to implementation — GATE 3
+
+After saving, ask the user whether to continue immediately or stop so `{plan_skill}` can run in a clean session.
+
+**If `{plan_skill}` is non-empty in config (default `plan`):** Use `AskUserQuestion`:
+
+```
+question: "Investigation saved. Continue to {plan_skill} now, or stop so it can run in a clean session?"
+header: "Next step"
+options:
+  - label: "Stop here — I'll run {plan_skill} in a clean session (Recommended)"
+    description: "Best for context budget. /clear or start a new session, then invoke {plan_skill} with the investigation file path."
+  - label: "Continue to {plan_skill} now"
+    description: "Invoke {plan_skill} in this session. Higher context usage; acceptable for small fixes."
+```
+
+**If "Stop here":** Output the exact resume command for the next session and end. Do not invoke anything. Format:
+
+```
+Resume in clean session with:
+    /{plan_skill} {absolute path to investigation file}
+```
+
+**If "Continue now":** Invoke `{plan_skill}` via the mechanism resolved in *Invoking companion skills*, passing **only the investigation file path** as the payload (not the full analysis — the file holds it). Payload format:
+
+```
+Investigation: {absolute path to investigation file}
+
+Read this file for the confirmed root cause, approved fix, files to change, and side-effect notes. Create the implementation plan based on the approved fix. Do not overwrite the investigation file — reference it from the plan's Background section.
+```
+
+**Per-harness application of the payload:**
+
+- **Claude Code:** call the `Skill` tool with `skill: "{plan_skill}"` and pass the payload above as the `args` parameter. Do NOT emit the payload as a text message — Claude Code only invokes skills via the `Skill` tool call. Emitting "Use the plan skill." as text is a silent no-op and breaks the handoff.
+- **Codex (`codex exec`):** emit the literal sentence `Use the {plan_skill} skill.` as your next assistant message, immediately followed by the payload above. This is the only working path on `codex exec`.
+- **Codex (interactive TUI):** invoke as `${plan_skill}` and pass the payload as the argument.
+
+The plan skill handles the execute handoff after creating the plan — do not invoke the `{execute_skill}` skill separately here.
+
+**Fallback — only when `{plan_skill}` is literally empty in config:** Use `AskUserQuestion`:
 
 ```
 question: "Root cause and fix are confirmed. How do you want to proceed?"
@@ -274,7 +460,7 @@ options:
     description: "Skip planning and start implementing via the execution skill."
 ```
 
-If "Implement the fix now": Invoke `{execute_skill}` with the approved fix context — pass the root cause analysis from Step 2, the approved fix from Step 4, all files that need to change, and side effects that were checked. The execute skill handles branch setup, TDD, testing, and commits. It will detect the missing plan file and offer to create one before proceeding.
+If "Implement the fix now": invoke the `{execute_skill}` skill (see *Invoking companion skills*) with the investigation file path as the payload. The execute skill handles branch setup, TDD, testing, and commits. It will detect the missing plan file and offer to create one before proceeding.
 
 ---
 
@@ -284,8 +470,10 @@ If "Implement the fix now": Invoke `{execute_skill}` with the approved fix conte
 - NEVER propose a fix before the root cause is confirmed by evidence AND approved by the user. Sequence is always: investigate → present analysis → user approves → investigate fix → present fix → user approves → hand off.
 - NEVER skip the execution chain trace — scale its depth to bug complexity (see Step 1), but always trace beyond the immediate failure site.
 - NEVER use assumption language ("probably", "likely", "I think", "should be", "presumably", "I believe", "it seems"). Instead, state verified facts with evidence citations, or say "This is unverified — I need to check X" and then check it.
-- NEVER proceed past Gate 1 or Gate 2 without explicit user approval via `AskUserQuestion`.
-- NEVER modify code during the debug skill. This skill outputs analysis and a fix proposal only — implementation happens via the configured planning and execution skills, or direct implementation after handoff.
+- NEVER proceed past Gate 1 or Gate 2 without explicit user approval through the resolved question tool, and NEVER end a turn on gate prose with no call attached — an unasked gate is a skipped gate.
+- NEVER modify code during this skill. Implementation happens ONLY via `{plan_skill}` or `{execute_skill}`. NEVER call Edit/Bash-mutate against codebase files.
+- After Gate 2: the ONLY writes permitted are the Step 5 investigation-outcome file at `{plans_dir}/{project}/{investigations_subdir}/` and the Step 5d `{tracker_cli} update`. All other writes are forbidden until handoff invoked — no Edit, no Write to codebase files, no NotebookEdit, no other Bash mutation (`git commit`, `mv`, `rm`, `>`, `>>`, `sed -i`). Allowed = read-only Bash, Read, Grep, the resolved question tool, the Step 5 write, the Step 5d tracker update, the handoff itself.
+- NEVER skip Step 5. The investigation-outcome file is mandatory whenever `{plans_dir}` is configured. Direct inline handoff (passing the analysis as a tool argument) is forbidden — the file is the handoff medium.
 - When investigation hits a dead end, present what was found, what remains unknown, and what additional information is needed. Do not fabricate an explanation to fill the gap.
 - When multiple root causes are plausible, investigate each and present the evidence for and against all of them. Let evidence decide — do not rank by "likelihood."
 </constraints>
