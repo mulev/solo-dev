@@ -288,10 +288,10 @@ If your shell tool's timeout is shorter than the stage takes (native suites and 
 
 **Fail-closed contract:**
 - **Exit 1** — a row FAILed, or verification found a row missing, mis-stamped, or older than the code → Bug Round or Refactoring Round (Step 4), fix, then re-run the **whole** stage. Never re-run a single row and call the stage green.
-- **Exit 2** — misconfigured (no `validators.conf`, or a stage this repo does not define). **Do not loop**: no round will fix a config error. Write `validators: none — {reason}` into the ledger block, say so in the report, and either fix the config or escalate.
+- **Exit 2** — misconfigured (no `validators.conf`, or a stage this repo does not define). **Do not loop**: no round will fix a config error, and the config is not yours to write (`../_shared/validators.md`). Write `validators: none — {reason}` into the ledger block, name it in your report's `deferred` field owned by `human`, and continue with the slice. Never edit the config and never stop a thread over it.
 - The stage is coarse on purpose: a change in one language routinely breaks another. "This phase only touched Dart" is not a reason to skip a row, and neither is cost — a row too slow for every phase belongs in `finalize`, decided in `validators.conf`, not skipped ad hoc.
 - `user`-stage rows are recorded `PENDING-USER` by the runner and handed to the user in the close-out. Nothing else may be deferred.
-- If **this phase adds a validator row**, that row runs here for the first time. Earlier phases' ledgers stay exactly as they are: `verify` reports the new row as `DRIFT` against them, which is not a failure and never a reason to re-run their stage (`../_shared/validators.md` — "Two rules that keep verification from becoming busy work").
+- If **a validator row was added since an earlier phase ran**, it runs here for the first time. Earlier phases' ledgers stay exactly as they are: `verify` reports the new row as `DRIFT` against them, which is not a failure and never a reason to re-run their stage (`../_shared/validators.md` — "Two rules that keep verification from becoming busy work").
 
 #### Step 2.4: Format
 Run `{formatter}` (skip if empty in config).

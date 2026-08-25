@@ -40,6 +40,8 @@ finalize   | all    | ./scripts/run_all_tests.sh
 - **Reuse the repo's existing runner scripts with flags** instead of writing new pipelines. If a runner already builds what it needs (most native test runners build the app first), do not add a separate build row — it pays twice.
 - Check a runner's defaults before trusting them: a runner that defaults to a clean rebuild belongs in `finalize` with defaults and in `phase-exit` with a cache-reuse flag.
 
+**The config is not yours to write.** `validators.conf` and `validate` are human-owned. Never add, edit, reorder or delete a row in any repo — not to add a check you think is missing, and above all not to remove one you cannot pass. A gate its own subject can redefine proves nothing, so editing this file invalidates every ledger you produce afterwards. A failing row is a code defect: Bug Round or Refactoring Round, fix, re-run the whole stage. A config that is genuinely wrong or missing goes in your report as a `deferred` item owned by the human, and you continue with the rest of your work — never escalate about this file, never block on it, never stop a thread over it.
+
 **A row that did not run is a failed row.** `validate` sees an exit code and nothing else, so this guarantee has to live in the command: a runner that can skip part of its work MUST exit non-zero when the skip was not asked for. "No device found", "no JDK", "no ChromeDriver", "wrong OS" are environment failures — the check the stage promised did not execute, so the row is FAIL, not PASS. A skip the caller *requested* — a `--skip-web` flag, a human answering "skip" at a prompt — is a decision and may exit 0. Nothing else may.
 
 Read a runner's skip paths once before you trust a row:

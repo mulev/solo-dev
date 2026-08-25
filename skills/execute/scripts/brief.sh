@@ -105,6 +105,8 @@ That stage is:
 
 $phase_block
 
+Those rows are fixed. Never add, edit or delete one — a row you cannot pass is a code defect to fix, or a \`deferred\` item for the human, never a row to change.
+
 Any FAIL opens a Bug Round or Refactoring Round (Step 4), you fix it, and you re-run the whole stage. You may only report when every row is PASS. After three failed rounds, stop and escalate with the failing ledger.
 
 Paste the runner's output verbatim — provenance header line included — into $SLICE as a fenced block under \`### Validation\`, inside this phase's \`## Architecture Gate Results\` block, then confirm with:
