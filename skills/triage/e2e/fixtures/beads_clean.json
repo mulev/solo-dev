@@ -1,0 +1,14 @@
+[
+  {
+    "id": "tb-clean1",
+    "title": "Add a config override flag to the settings CLI",
+    "description": "Add a config override flag to the settings CLI.",
+    "issue_type": "task",
+    "status": "needs-plan",
+    "priority": 2,
+    "notes": "",
+    "parent": null,
+    "deps": [],
+    "expect": {"route": "investigate", "reason": "no investigation on record"}
+  }
+]

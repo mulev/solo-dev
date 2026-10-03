@@ -10,13 +10,8 @@
 #   brief.sh <bead-id> <slice-path> <branch> [repo-root]
 #
 # Environment:
-#   TRACKER_CLI       issue-tracker CLI name from skill.config.md (default: bd).
-#                     Set to empty when the repo has no tracker — the tracker
-#                     lines are then omitted entirely.
-#   WORKSPACE_AGENTS  path to an instruction file above the repo, for a workspace
-#                     holding several repos side by side. Defaults to
-#                     <repo-root>/../AGENTS.md and is omitted when absent, so a
-#                     standalone repo needs no setting.
+#   WORKSPACE_AGENTS  path to the workspace-level AGENTS.md
+#                     (default: <repo-root>/../AGENTS.md)
 #   NO_COMMIT=1       tell the worker it may not commit
 set -u
 
@@ -41,29 +36,8 @@ grep -qE 'Contract version: \*\*DM-[0-9]{4}-[0-9]{2}-v[0-9]+\*\*' "$SKILL_MD" ||
 	exit 2
 }
 
-TRACKER_CLI=${TRACKER_CLI-bd}
 WORKSPACE_AGENTS=${WORKSPACE_AGENTS:-$(dirname "$REPO")/AGENTS.md}
 REPO_AGENTS="$REPO/AGENTS.md"
-
-# A brief that tells a worker to `cat` a file that does not exist teaches it that
-# the brief is unreliable. Number only the files actually on disk.
-n=1
-read_list=$(printf '%d. `cat %s` — the execute skill. Follow its `<delegated-mode>` block end to end. Skip the `cat` only if this skill is already in your context (some harnesses preload it) — never skip reading it.\n' "$n" "$SKILL_MD")
-for f in "$WORKSPACE_AGENTS" "$REPO_AGENTS"; do
-	[ -f "$f" ] || continue
-	n=$((n + 1))
-	read_list=$(printf '%s\n%d. `cat %s`' "$read_list" "$n" "$f")
-done
-read_list=$(printf '%s\n%d. Your working file: %s' "$read_list" "$((n + 1))" "$SLICE")
-
-if [ -n "$TRACKER_CLI" ]; then
-	tracker_line=$(printf 'Tracker: `%s` cwd does not persist between your shell calls — pass `-C %s` on every `%s` command.' \
-		"$TRACKER_CLI" "$REPO" "$TRACKER_CLI")
-	no_push="Never push, never \`$TRACKER_CLI\` remote-sync commands."
-else
-	tracker_line='Tracker: none for this repo. The slice file is the only state you update.'
-	no_push='Never push.'
-fi
 
 phase_rows=$(cd "$REPO" && ./validate list phase-exit 2>/dev/null) || phase_rows=''
 user_rows=$(cd "$REPO" && ./validate list user 2>/dev/null) || user_rows=''
@@ -78,13 +52,16 @@ fi
 if [ "${NO_COMMIT:-0}" = 1 ]; then
 	commit_line='Commit permission: NONE. Leave your work staged-free and uncommitted; main commits.'
 else
-	commit_line="Commit permission: GRANTED for your own bead files only. Stage explicit paths — never \`git add -A\`, never \`git commit -a\`. $no_push"
+	commit_line='Commit permission: GRANTED for your own bead files only. Stage explicit paths — your source files and `ledger` — never `git add -A`, never `git commit -a`. Never push, never `bd dolt push`.'
 fi
 
 cat <<BRIEF
 # Read first (in this order, before any other tool call)
 
-$read_list
+1. \`cat $SKILL_MD\` — the execute skill. Follow its \`<delegated-mode>\` block end to end. Skip the \`cat\` only if this skill is already in your context (some harnesses preload it) — never skip reading it.
+2. \`cat $WORKSPACE_AGENTS\`
+3. \`cat $REPO_AGENTS\`
+4. Your working file: $SLICE
 
 # Constraints (decided by the main session — do NOT re-decide)
 
@@ -92,7 +69,7 @@ Bead: $BEAD
 Repo: $REPO
 Branch: \`$BRANCH\` — already checked out. Verify you are on it. Never switch, never create, never touch \`main\`.
 $commit_line
-$tracker_line
+Tracker: \`bd\` cwd does not persist between your shell calls — pass \`-C $REPO\` on every \`bd\` command.
 Escalation: you cannot ask the user. Send the question to the main session and stop that thread. Never guess, never shrink the bead to avoid asking.
 
 # Validation — mandatory, not a judgement call
@@ -107,26 +84,37 @@ $phase_block
 
 Those rows are fixed. Never add, edit or delete one — a row you cannot pass is a code defect to fix, or a \`deferred\` item for the human, never a row to change.
 
-Any FAIL opens a Bug Round or Refactoring Round (Step 4), you fix it, and you re-run the whole stage. You may only report when every row is PASS. After three failed rounds, stop and escalate with the failing ledger.
+Any FAIL opens a Bug Round or Refactoring Round (Step 4), you fix it, and you re-run the whole stage. You may only report when every row is PASS. After three failed rounds, stop and escalate with the failing ledger and the directory its header's \`log=\` names — a failed run keeps every row's full output there, and the row's single line is a summary nobody can act on.
 
-Paste the runner's output verbatim — provenance header line included — into $SLICE as a fenced block under \`### Validation\`, inside this phase's \`## Architecture Gate Results\` block, then confirm with:
+The run writes \`$REPO/ledger\` — the header and rows it just printed. You
+transcribe nothing. Then confirm it:
 
-  ./validate verify phase-exit $SLICE
+  ./validate verify phase-exit
 
-Run the stage after your last edit, not before: verification fails a ledger that
-predates a source file's mtime, which is exactly how a fix applied after the run
-gets caught. A \`DRIFT\` line is not a failure — it means the stage gained a row
-after some earlier ledger was written.
+That takes no file argument: it reads \`ledger\`. Record two lines under
+\`### Validation\` in $SLICE, inside this phase's \`## Architecture Gate Results\`
+block — the verdict line \`verify\` printed, verbatim, and the sha of the commit
+carrying \`ledger\`.
+
+Run the stage after your last edit, not before, and stage \`ledger\` with the
+source it proves in the same commit: verification measures staleness from the
+ledger's own commit, which is exactly how a fix applied after the run gets
+caught. A \`DRIFT\` line is not a failure — it means the stage gained a row after
+the ledger ran.
+
+If the stage outruns your shell tool's timeout, launch it as a supervised
+process under a name nothing else has used, then read \`$REPO/ledger\` when it
+exits — never the process log. A supervisor can replay a reused name's old
+buffer, so a log may show another run's rows under a live process.
 $(if [ -n "$user_rows" ]; then
 	printf '\nHanded to the user, never run by you:\n\n'
 	printf '%s\n' "$user_rows" | sed 's/^/  /'
 fi)
-
 # Report (at most 15 lines, no diffs, no logs)
 
 contract: the version token named on the \`Contract version:\` line of \`<delegated-mode>\` — look it up, do not guess
 files created / modified
-tests + validation: the ledger lines, and whether \`verify\` exited 0
+tests + validation: the \`verify\` verdict line, verbatim, and the commit carrying \`ledger\`
 architecture gate: the Overall line
 bead: id + status + commit shas
 deferred: every check you did not run, with who owns it

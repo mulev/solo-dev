@@ -1,0 +1,613 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "competitive-pipeline",
+  "title": "Competitive Intelligence Pipeline Output Schemas",
+  "description": "Schemas for all competitive intelligence pipeline output files (Phases 1-5). See references/competitive-intelligence.md for pipeline details.",
+
+  "$defs": {
+    "summary": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "Natural-language summary for LLM navigation. ≤200 chars."
+    },
+    "datetime": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp"
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "YYYY-MM-DD date"
+    },
+    "relevance_type": {
+      "type": "string",
+      "enum": ["direct", "indirect", "alternative"],
+      "description": "direct=same category/audience/problem, indirect=adjacent, alternative=different solution to same problem"
+    },
+    "pricing_model": {
+      "type": "string",
+      "enum": ["free", "freemium", "subscription", "one_time", "hybrid"]
+    },
+
+    "phase1_competitors": {
+      "type": "object",
+      "title": "phase1-competitors.json",
+      "description": "Prioritized competitor list from multiple discovery sources.",
+      "required": ["_summary", "competitors"],
+      "properties": {
+        "_summary": { "$ref": "#/$defs/summary" },
+        "competitors": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["name", "slug", "description", "relevance", "sources", "score"],
+            "properties": {
+              "name": { "type": "string" },
+              "slug": { "type": "string" },
+              "description": { "type": "string", "description": "One-line description of what they do" },
+              "website_url": { "type": ["string", "null"] },
+              "app_store_url": { "type": ["string", "null"] },
+              "play_store_url": { "type": ["string", "null"] },
+              "relevance": { "$ref": "#/$defs/relevance_type" },
+              "sources": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Where this competitor was found: product_foundation, web_search, app_store, review_platform, community"
+              },
+              "score": { "type": "number", "description": "relevance × visibility (appearance count across sources)" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "phase2_website": {
+      "type": "object",
+      "title": "phase2/{slug}/website.json",
+      "description": "Website analysis for a single competitor.",
+      "required": ["_summary", "slug", "homepage_headline", "homepage_subheadline", "about", "features", "pricing", "careers"],
+      "properties": {
+        "_summary": { "$ref": "#/$defs/summary" },
+        "slug": { "type": "string" },
+        "homepage_headline": { "type": "string" },
+        "homepage_subheadline": { "type": ["string", "null"] },
+        "about": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["mission", "team_size_signal"],
+              "properties": {
+                "mission": { "type": ["string", "null"] },
+                "founding_story": { "type": ["string", "null"] },
+                "team_size_signal": { "type": ["string", "null"], "description": "Exact count, range, or qualitative (small/medium/large)" }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "description"],
+            "properties": {
+              "name": { "type": "string" },
+              "description": { "type": "string" },
+              "priority_signal": { "type": ["string", "null"], "description": "How prominently featured (hero, above fold, buried)" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "pricing": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["model", "tiers"],
+              "properties": {
+                "model": { "$ref": "#/$defs/pricing_model" },
+                "tiers": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["name", "price_monthly", "key_features"],
+                    "properties": {
+                      "name": { "type": "string" },
+                      "price_monthly": { "type": ["number", "null"] },
+                      "price_annual": { "type": ["number", "null"] },
+                      "key_features": { "type": "array", "items": { "type": "string" } }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "trial": {
+                  "oneOf": [
+                    { "type": "null" },
+                    {
+                      "type": "object",
+                      "required": ["duration_days", "credit_card_required"],
+                      "properties": {
+                        "duration_days": { "type": "integer", "minimum": 1 },
+                        "credit_card_required": { "type": "boolean" },
+                        "full_access": { "type": "boolean" }
+                      },
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "enterprise_pricing": {
+                  "type": "string",
+                  "enum": ["published", "contact_sales", "none"]
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "careers": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["total_open_roles", "by_department"],
+              "properties": {
+                "total_open_roles": { "type": "integer", "minimum": 0 },
+                "by_department": {
+                  "type": "object",
+                  "description": "Keyed by department name (engineering, sales, marketing, product, support, etc.)",
+                  "additionalProperties": { "type": "integer", "minimum": 0 }
+                },
+                "hiring_signal": { "type": ["string", "null"], "description": "Interpretation: product push, growth mode, SEO bet, etc." }
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "phase2_app_store": {
+      "type": "object",
+      "title": "phase2/{slug}/app-store.json",
+      "description": "App store listing data for a single competitor.",
+      "required": ["_summary", "slug", "app_name", "title", "subtitle", "description", "rating", "ratings_count", "last_updated", "screenshots_count", "iap_list", "whats_new"],
+      "properties": {
+        "_summary": { "$ref": "#/$defs/summary" },
+        "slug": { "type": "string" },
+        "app_name": { "type": "string" },
+        "title": { "type": "string" },
+        "subtitle": { "type": ["string", "null"] },
+        "description": { "type": "string" },
+        "rating": { "type": "number", "minimum": 1, "maximum": 5 },
+        "ratings_count": { "type": "integer", "minimum": 0 },
+        "last_updated": { "$ref": "#/$defs/date" },
+        "screenshots_count": { "type": "integer", "minimum": 0 },
+        "iap_list": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "price"],
+            "properties": {
+              "name": { "type": "string" },
+              "price": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "whats_new": { "type": ["string", "null"], "description": "Most recent What's New text — signals product direction" }
+      },
+      "additionalProperties": false
+    },
+
+    "phase2_social": {
+      "type": "object",
+      "title": "phase2/{slug}/social.json",
+      "description": "Social media presence for a single competitor.",
+      "required": ["_summary", "slug", "channels"],
+      "properties": {
+        "_summary": { "$ref": "#/$defs/summary" },
+        "slug": { "type": "string" },
+        "channels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["platform", "url", "followers", "posting_frequency", "engagement_signal"],
+            "properties": {
+              "platform": { "type": "string" },
+              "url": { "type": "string" },
+              "followers": { "type": ["integer", "null"], "minimum": 0 },
+              "posting_frequency": { "type": "string", "description": "e.g. daily, weekly, monthly, inactive" },
+              "engagement_signal": { "type": "string", "description": "Qualitative: high, moderate, low, minimal" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "phase2_jobs": {
+      "type": "object",
+      "title": "phase2/{slug}/jobs.json",
+      "description": "Job postings analysis for a single competitor.",
+      "required": ["_summary", "slug", "source", "total_open_roles", "by_department", "hiring_signal"],
+      "properties": {
+        "_summary": { "$ref": "#/$defs/summary" },
+        "slug": { "type": "string" },
+        "source": { "type": "string", "description": "Where job data was found: careers page, greenhouse, lever, linkedin, etc." },
+        "total_open_roles": { "type": "integer", "minimum": 0 },
+        "by_department": {
+          "type": "object",
+          "description": "Keyed by department name",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "notable_roles": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Specific roles that signal strategic direction"
+        },
+        "hiring_signal": { "type": "string", "description": "Interpretation of hiring pattern" }
+      },
+      "additionalProperties": false
+    },
+
+    "phase3_reviews": {
+      "type": "object",
+      "title": "phase3/{slug}/reviews.json",
+      "description": "Collected reviews from multiple platforms for a single competitor.",
+      "required": ["_summary", "slug", "sources", "total_reviews", "reviews"],
+      "properties": {
+        "_summary": { "$ref": "#/$defs/summary" },
+        "slug": { "type": "string" },
+        "sources": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Platforms scraped: g2, capterra, app_store, play_store, trustpilot, reddit"
+        },
+        "total_reviews": { "type": "integer", "minimum": 0 },
+        "reviews": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["source", "rating", "text", "date"],
+            "properties": {
+              "source": { "type": "string" },
+              "rating": { "type": ["integer", "null"], "minimum": 1, "maximum": 5 },
+              "title": { "type": ["string", "null"] },
+              "text": { "type": "string" },
+              "date": { "$ref": "#/$defs/date" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "phase3_sentiment": {
+      "type": "object",
+      "title": "phase3/{slug}/sentiment.json",
+      "description": "Clustered sentiment analysis from reviews for a single competitor.",
+      "required": ["_summary", "slug", "total_reviews_analyzed", "complaint_clusters", "praise_clusters", "net_sentiment"],
+      "properties": {
+        "_summary": { "$ref": "#/$defs/summary" },
+        "slug": { "type": "string" },
+        "total_reviews_analyzed": { "type": "integer", "minimum": 0 },
+        "complaint_clusters": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sentiment_cluster" }
+        },
+        "praise_clusters": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sentiment_cluster" }
+        },
+        "net_sentiment": {
+          "type": "object",
+          "required": ["positive_pct", "negative_pct", "trending"],
+          "properties": {
+            "positive_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+            "negative_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+            "trending": {
+              "type": "string",
+              "enum": ["improving", "stable", "declining", "insufficient_data"]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "sentiment_cluster": {
+      "type": "object",
+      "required": ["theme", "review_count", "percentage", "example_quotes"],
+      "properties": {
+        "theme": { "type": "string" },
+        "review_count": { "type": "integer", "minimum": 1 },
+        "percentage": { "type": "number", "minimum": 0, "maximum": 100 },
+        "example_quotes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "maxItems": 3
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "phase4_synthesis": {
+      "type": "object",
+      "title": "phase4-synthesis.json",
+      "description": "Cross-competitor analysis: positioning map, feature matrix, pricing landscape, teardowns, strategic gaps.",
+      "required": ["_summary", "positioning_map", "feature_matrix", "pricing_landscape", "teardowns", "strategic_gaps", "assumptions"],
+      "properties": {
+        "_summary": { "$ref": "#/$defs/summary" },
+        "positioning_map": {
+          "type": "object",
+          "required": ["axis_x", "axis_y", "placements"],
+          "properties": {
+            "axis_x": { "type": "string", "description": "Label for horizontal axis" },
+            "axis_y": { "type": "string", "description": "Label for vertical axis" },
+            "placements": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["slug", "name", "x", "y", "notes"],
+                "properties": {
+                  "slug": { "type": "string" },
+                  "name": { "type": "string" },
+                  "x": { "type": "integer", "minimum": 1, "maximum": 10, "description": "Position on horizontal axis (1=low, 10=high)" },
+                  "y": { "type": "integer", "minimum": 1, "maximum": 10, "description": "Position on vertical axis (1=low, 10=high)" },
+                  "notes": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "empty_quadrants": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Quadrant descriptions where no competitor sits"
+            }
+          },
+          "additionalProperties": false
+        },
+        "feature_matrix": {
+          "type": "object",
+          "required": ["features", "competitors", "classification"],
+          "properties": {
+            "features": { "type": "array", "items": { "type": "string" } },
+            "competitors": {
+              "type": "object",
+              "description": "Keyed by slug → boolean array matching features order",
+              "additionalProperties": {
+                "type": "array",
+                "items": { "type": "boolean" }
+              }
+            },
+            "classification": {
+              "type": "object",
+              "required": ["table_stakes", "differentiators", "gaps"],
+              "properties": {
+                "table_stakes": { "type": "array", "items": { "type": "string" } },
+                "differentiators": { "type": "array", "items": { "type": "string" } },
+                "gaps": { "type": "array", "items": { "type": "string" } }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "pricing_landscape": {
+          "type": "object",
+          "required": ["competitors", "price_distribution"],
+          "properties": {
+            "competitors": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["slug", "name", "model", "monthly", "annual", "trial_days", "free_tier"],
+                "properties": {
+                  "slug": { "type": "string" },
+                  "name": { "type": "string" },
+                  "model": { "$ref": "#/$defs/pricing_model" },
+                  "monthly": { "type": ["number", "null"] },
+                  "annual": { "type": ["number", "null"] },
+                  "trial_days": { "type": ["integer", "null"] },
+                  "free_tier": { "type": "boolean" },
+                  "notes": { "type": ["string", "null"] }
+                },
+                "additionalProperties": false
+              }
+            },
+            "price_distribution": {
+              "type": "object",
+              "required": ["monthly", "annual"],
+              "properties": {
+                "monthly": { "$ref": "#/$defs/price_range" },
+                "annual": { "$ref": "#/$defs/price_range" }
+              },
+              "additionalProperties": false
+            },
+            "pricing_gaps": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Underserved price points or model gaps"
+            }
+          },
+          "additionalProperties": false
+        },
+        "teardowns": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/competitor_teardown" }
+        },
+        "strategic_gaps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["gap", "demand_evidence", "competitor_weakness", "our_capability", "impact"],
+            "properties": {
+              "gap": { "type": "string" },
+              "demand_evidence": { "type": "string", "description": "Criterion 1: real demand exists" },
+              "competitor_weakness": { "type": "string", "description": "Criterion 2: competitors underserve" },
+              "our_capability": { "type": "string", "description": "Criterion 3: we can credibly fill" },
+              "impact": { "type": "string", "enum": ["high", "medium", "low"] }
+            },
+            "additionalProperties": false
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["assumption", "confidence", "invalidation_condition"],
+            "properties": {
+              "assumption": { "type": "string", "description": "What is being assumed, stated plainly" },
+              "confidence": {
+                "type": "string",
+                "enum": ["confirmed", "high", "medium", "low"],
+                "description": "How confident we are this assumption holds"
+              },
+              "invalidation_condition": { "type": "string", "description": "What evidence would prove this assumption wrong" }
+            },
+            "additionalProperties": false
+          },
+          "description": "Explicit list of assumptions underlying synthesis conclusions. Downstream phases and future runs use this to verify whether prior conclusions still hold."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "price_range": {
+      "type": "object",
+      "required": ["min", "max", "median"],
+      "properties": {
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "median": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+
+    "competitor_teardown": {
+      "type": "object",
+      "required": ["slug", "name", "summary", "positioning", "strengths", "weaknesses", "strategic_bets", "implications"],
+      "properties": {
+        "slug": { "type": "string" },
+        "name": { "type": "string" },
+        "summary": { "type": "string", "description": "3-5 sentences: who, what, who they serve, most important observation" },
+        "positioning": { "type": "string", "description": "Where they sit on the positioning map and where they are NOT competing" },
+        "strengths": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["claim", "evidence"],
+            "properties": {
+              "claim": { "type": "string" },
+              "evidence": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "weaknesses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["claim", "evidence"],
+            "properties": {
+              "claim": { "type": "string" },
+              "evidence": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "strategic_bets": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Inferred from hiring, content, product changes. Label as inferences."
+        },
+        "implications": { "type": "string", "description": "What this means for our strategy" }
+      },
+      "additionalProperties": false
+    },
+
+    "phase5_implications": {
+      "type": "object",
+      "title": "phase5-implications.json",
+      "description": "Strategic implications: where to compete, avoid, and exploit opportunities.",
+      "required": ["_summary", "compete_directly", "avoid", "positioning_opportunities", "pricing_opportunities", "messaging_opportunities"],
+      "properties": {
+        "_summary": { "$ref": "#/$defs/summary" },
+        "compete_directly": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["area", "our_advantage", "evidence"],
+            "properties": {
+              "area": { "type": "string" },
+              "our_advantage": { "type": "string" },
+              "evidence": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "avoid": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["area", "incumbent", "reason"],
+            "properties": {
+              "area": { "type": "string" },
+              "incumbent": { "type": "string" },
+              "reason": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "positioning_opportunities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["opportunity", "evidence"],
+            "properties": {
+              "opportunity": { "type": "string" },
+              "evidence": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "pricing_opportunities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["opportunity", "evidence"],
+            "properties": {
+              "opportunity": { "type": "string" },
+              "evidence": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "messaging_opportunities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["angle", "source", "evidence"],
+            "properties": {
+              "angle": { "type": "string" },
+              "source": { "type": "string", "description": "Where this insight came from: review clusters, positioning gap, etc." },
+              "evidence": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

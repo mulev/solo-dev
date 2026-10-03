@@ -1,0 +1,25 @@
+{
+  "_source": "Hand-built for the e2e exit-code suite. Two beads with byte-identical footprints — the late duplicate collide.py exits 1 on.",
+  "footprints": [
+    {
+      "bead": "tb-col1",
+      "files": [
+        {"path": "lib/shared_render.py", "module": "lib", "change": "modify"}
+      ],
+      "symbols": [
+        {"name": "card_theme_color", "kind": "function", "change": "behavior"}
+      ],
+      "modules": ["lib"]
+    },
+    {
+      "bead": "tb-col2",
+      "files": [
+        {"path": "lib/shared_render.py", "module": "lib", "change": "modify"}
+      ],
+      "symbols": [
+        {"name": "card_theme_color", "kind": "function", "change": "behavior"}
+      ],
+      "modules": ["lib"]
+    }
+  ]
+}

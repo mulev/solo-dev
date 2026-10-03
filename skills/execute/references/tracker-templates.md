@@ -231,19 +231,39 @@ If claim fails (task already claimed by someone else), warn the user and ask whe
 - `--reason` records what was done
 - `--suggest-next` shows tasks that were unblocked by this closure — useful for the user to know what's available next
 
-### Epic auto-close check (after closing any child task)
+### Epic close (after closing the LAST child task — main session only)
+
+`{tracker_cli} epic close-eligible` is an **action, not a query**. It closes every epic whose
+children are all complete and prints `Closed N epic(s)`; it never merely lists them. Two
+consequences, both learned the hard way:
+
+- **A worker must never run it.** A child-bead worker that runs it closes the parent epic the
+  moment its own bead closes, which jumps the main session's verify-then-close gate on every
+  sibling. Never put this command in a worker brief.
+- **It is not the check.** Run it only after every child's artifacts are verified — gate
+  **Overall: PASS**, `./validate verify phase-exit` exit 0, child bead closed.
+
+To inspect without acting, use the read-only commands:
+
+```bash
+{tracker_cli} show {epic-id}        # this epic: status, close reason, CHILDREN block
+{tracker_cli} epic status           # every OPEN epic and its child progress; takes no id,
+                                    # and a closed epic drops out of the listing entirely
+```
+
+Then, once the children are verified:
 
 ```bash
 {tracker_cli} epic close-eligible
 ```
 
-If the parent epic appears in the output (all its children are closed):
+Confirm with `{tracker_cli} show {epic-id}` and notify the user: "Epic {epic-id}: {title}
+closed — all child tasks are done." If it somehow reports open with every child done, close it
+explicitly:
 
 ```bash
 {tracker_cli} close {epic-id} --reason "All phases complete"
 ```
-
-Notify the user: "Epic {epic-id}: {title} auto-closed — all child tasks are done."
 
 ### Persist state (if Dolt auto-commit is off)
 
@@ -343,6 +363,6 @@ Multi-phase slice file (flat checklist):
 
 These complement the Task Lifecycle Commands above:
 
-- **Close immediately** — close the tracker task as soon as its phase completes. This unblocks dependent tasks as early as possible. Run `{tracker_cli} epic close-eligible` after every child closure and close the parent epic when all children are done. Never leave a "all children done, epic still open" state behind — Step 5 treats it as a failed gate, so confirm with `{tracker_cli} show {epic-id}` rather than assuming the auto-close fired.
+- **Close immediately** — close the tracker task as soon as its phase completes. This unblocks dependent tasks as early as possible. After the **last** child closes, the main session runs `{tracker_cli} epic close-eligible`, which closes the parent — it is an action, not a check, so a worker never runs it and it never substitutes for verifying the children first. Never leave a "all children done, epic still open" state behind — Step 5 treats it as a failed gate, so confirm with `{tracker_cli} show {epic-id}` rather than assuming the close fired.
 - **Partial completion** — when the user picks "Stop here" mid-phase, leave the task as `in_progress`. Do NOT close or revert status. The next invocation resumes from the first unchecked step.
 - **Refactoring Rounds** — architecture-gate violations are tracked as Refactoring Rounds in the working file, separate from Bug Rounds. Refactoring commits use the `refactor:` prefix and never bundle with feature work.

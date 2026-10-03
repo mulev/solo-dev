@@ -1,0 +1,15 @@
+{
+  "_source": "Hand-built for the e2e exit-code suite. One bead, one file nothing else touches — collide.py's exit-0 case.",
+  "footprints": [
+    {
+      "bead": "tb-ind1",
+      "files": [
+        {"path": "lib/lonely_config.py", "module": "lib", "change": "modify"}
+      ],
+      "symbols": [
+        {"name": "default_config_path", "kind": "function", "change": "behavior"}
+      ],
+      "modules": ["lib"]
+    }
+  ]
+}

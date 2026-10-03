@@ -5,7 +5,7 @@
     "email": "m.mulev@gmail.com"
   },
   "metadata": {
-    "description": "Investigate, plan, execute — opinionated, evidence-gated workflow skills for solo developers working with AI agents",
+    "description": "Investigate, plan, execute \u2014 opinionated, evidence-gated workflow skills for solo developers working with AI agents",
     "version": "2.0.0"
   },
   "plugins": [
@@ -15,10 +15,12 @@
       "source": "./",
       "strict": false,
       "skills": [
-        "./skills/investigate",
-        "./skills/plan",
+        "./skills/_shared",
         "./skills/execute",
-        "./skills/_shared"
+        "./skills/investigate",
+        "./skills/marketer",
+        "./skills/plan",
+        "./skills/triage"
       ]
     }
   ]

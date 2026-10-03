@@ -1,0 +1,13 @@
+{
+  "verdict": "PARK",
+  "defect_class": "repairable",
+  "defects": [
+    {
+      "severity": "major",
+      "location": "b.md:5",
+      "why": "The cited line does not contain the quoted call."
+    }
+  ],
+  "confidence": 0.6,
+  "round": 2
+}

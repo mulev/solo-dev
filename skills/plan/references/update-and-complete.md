@@ -78,9 +78,8 @@ If the project has task tracking initialized and the plan's `## Beads` section c
 - **Phase completed:** run the close → epic auto-close → persist sequence:
   ```
   {tracker_cli} close {task-id} --reason "Phase {N} complete: {one-line summary}" --suggest-next
-  {tracker_cli} epic close-eligible
   ```
-  If the parent epic appears in the `epic close-eligible` output, close it: `{tracker_cli} close {epic-id} --reason "All phases complete"`. See `../execute/references/tracker-templates.md` (Task Lifecycle Commands) for the canonical sequence.
+  Then, once every child's artifacts are verified, the main session — never a worker — closes the parent with `{tracker_cli} epic close-eligible`. That subcommand is an action: it closes every eligible epic and prints `Closed N epic(s)`, so it is not a way to check eligibility. Inspect with `{tracker_cli} show {epic-id}` instead. See `execute/references/tracker-templates.md` (Epic close) for the canonical sequence.
 - **Bug round added:** `{tracker_cli} note {task-id} "Bug round {N}: {short description}"` on the affected task.
 - **Plan restructured (phases added/removed):** Create or close tracker tasks to match. Update the plan's `## Beads` table.
 

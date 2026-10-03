@@ -1,0 +1,13 @@
+{
+  "verdict": "PARK",
+  "defect_class": "stop-list",
+  "defects": [
+    {
+      "severity": "critical",
+      "location": "a.md:44",
+      "why": "Item 4 of the autonomy charter forbids this - who approves the schema migration?"
+    }
+  ],
+  "confidence": 0.62,
+  "round": 1
+}

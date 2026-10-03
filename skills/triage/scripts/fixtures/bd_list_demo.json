@@ -1,0 +1,571 @@
+[
+  {
+    "id": "demo-g65.3",
+    "title": "Phase 7: DjVu Demo Integration",
+    "description": "Wire DjVu into Demo: import pipeline, DjVuReaderScreen, navigation routing, OPDS, Open with, localization.\n\nStep 7.1: Exploration\n- [ ] Read pdf_reader_screen.dart — pattern for DjVu reader\n- [ ] Read pdf_settings_sheet.dart — preferences UI\n- [ ] Read book_navigation_service.dart — format routing\n\nStep 7.2: Tests (TDD)\n- [ ] Create djvu_import_test.dart\n- [ ] Create djvu_service_test.dart\n- [ ] Create djvu_navigation_controller_test.dart\n\nStep 7.3: Implementation\n- [ ] Add .djvu to all allowed extension sets\n- [ ] Create djvu_service.dart — metadata extraction\n- [ ] Add DjVu branch to BookImportCoordinator\n- [ ] Create djvu_reader_screen.dart\n- [ ] Create djvu_settings_sheet.dart\n- [ ] Create djvu_navigation_controller.dart\n- [ ] Create djvu_progress_converter.dart\n- [ ] Update book_navigation_service.dart — DjVu routing\n- [ ] Add DjVu to Android manifest and iOS plist\n- [ ] Add DjVu to OPDS link recognition\n\nStep 7.4: Integration Tests\n- [ ] Add DjVu to file_import_flow_test.dart\n- [ ] Add DjVu to reader_persistence_test.dart\n\nStep 7.5: Documentation\n- [ ] Update features.md, data-flows.md, constraints.md\n\nStep 7.6: Polish\n- [ ] Add AppLogger.djvu() + localization (51 locales)\n- [ ] Run dart format + full test suite",
+    "notes": "Slice: /Users/demo/projects/project_plans/demo/todo/demo_epic_fb2_djvu_formats/phase_7_djvu_demo.md\nMaster: /Users/demo/projects/project_plans/demo/todo/demo_epic_fb2_djvu_formats/plan.md\nFull implementation detail (code snippets, insertion points, done-when criteria) is in the slice file. Use /execute to implement.\nDepends on Plugin DjVu work completing first (plugin-tu4, plugin-99m, plugin-aw1, plugin Phase 6).",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "feature",
+    "owner": "dev@example.com",
+    "created_at": "2026-04-08T07:25:39Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-07-31T21:43:22Z",
+    "labels": [
+      "android",
+      "dart",
+      "ios"
+    ],
+    "dependencies": [
+      {
+        "issue_id": "demo-g65.3",
+        "depends_on_id": "demo-g65",
+        "type": "parent-child",
+        "created_at": "2026-04-08T09:25:39Z",
+        "created_by": "Demo User",
+        "metadata": "{}"
+      },
+      {
+        "issue_id": "demo-g65.3",
+        "depends_on_id": "demo-g65.1",
+        "type": "blocks",
+        "created_at": "2026-04-08T09:25:39Z",
+        "created_by": "Demo User",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 1,
+    "dependent_count": 0,
+    "comment_count": 0,
+    "parent": "demo-g65"
+  },
+  {
+    "id": "demo-g65.2",
+    "title": "Phase 2: FB2 Import Integration",
+    "description": "Wire FB2 into Demo import pipeline: file picker, URL download, documents folder, Open with, OPDS, localization.\n\nStep 2.1: Exploration\n- [ ] Read book_import_coordinator.dart — find format branches\n- [ ] Read book_download_service.dart — find allowed extensions\n- [ ] Read documents_folder_scanner.dart, book_file_picker.dart\n- [ ] Read AndroidManifest.xml and Info.plist for Open with\n\nStep 2.2: Tests (TDD)\n- [ ] Create fb2_import_test.dart — conversion, metadata, cover, duplicate check\n- [ ] Update download service tests — .fb2 extension, MIME types\n\nStep 2.3: Implementation\n- [ ] Add .fb2 to all allowed extension sets\n- [ ] Add FB2 MIME types to download service\n- [ ] Add FB2 import branch to BookImportCoordinator\n- [ ] Add FB2 to Android manifest and iOS plist\n- [ ] Add FB2 to OPDS link recognition\n\nStep 2.4: Integration Tests\n- [ ] Add FB2 case to file_import_flow_test.dart\n\nStep 2.5: Documentation\n- [ ] Update data-flows.md, constraints.md\n\nStep 2.6: Polish\n- [ ] Add AppLogger.fb2() method\n- [ ] Run dart format + full test suite",
+    "notes": "Slice: /Users/demo/projects/project_plans/demo/todo/demo_epic_fb2_djvu_formats/phase_2_fb2_import.md\nMaster: /Users/demo/projects/project_plans/demo/todo/demo_epic_fb2_djvu_formats/plan.md\nFull implementation detail (code snippets, insertion points, done-when criteria) is in the slice file. Use /execute to implement.",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "feature",
+    "owner": "dev@example.com",
+    "created_at": "2026-04-08T07:24:47Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-07-31T21:43:22Z",
+    "labels": [
+      "android",
+      "dart",
+      "ios"
+    ],
+    "dependencies": [
+      {
+        "issue_id": "demo-g65.2",
+        "depends_on_id": "demo-g65.1",
+        "type": "blocks",
+        "created_at": "2026-04-08T09:24:47Z",
+        "created_by": "Demo User",
+        "metadata": "{}"
+      },
+      {
+        "issue_id": "demo-g65.2",
+        "depends_on_id": "demo-g65",
+        "type": "parent-child",
+        "created_at": "2026-04-08T09:24:47Z",
+        "created_by": "Demo User",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 1,
+    "dependent_count": 0,
+    "comment_count": 0,
+    "parent": "demo-g65"
+  },
+  {
+    "id": "demo-g65.1",
+    "title": "Phase 1: FB2 Parser \u0026 EPUB Converter",
+    "description": "Dart FB2 XML parser and EPUB 3 package generator with unit tests.\n\nStep 1.1: Exploration\n- [ ] Read FB2 XML specification (FictionBook.xsd)\n- [ ] Read EPUB 3 package structure (EpubCoverExtractor pattern)\n- [ ] Create test fixture FB2 files\n\nStep 1.2: Tests (TDD)\n- [ ] Create fb2_parser_test.dart — metadata, sections, binaries, error handling\n- [ ] Create fb2_to_epub_converter_test.dart — EPUB validity, metadata, content, images\n\nStep 1.3: Implementation\n- [ ] Create fb2_parser.dart — parse FB2 XML to Fb2Book model\n- [ ] Create fb2_to_epub_converter.dart — generate EPUB 3 from Fb2Book\n- [ ] Create fb2_section_to_xhtml.dart — FB2 elements to XHTML mapping\n- [ ] Run full test suite\n\nStep 1.4: Integration Tests — deferred to Phase 2\n\nStep 1.5: Documentation\n- [ ] Update features.md — add FB2 format\n- [ ] Update feature-structure.md — document fb2/ directory\n\nStep 1.6: Polish\n- [ ] Run dart format + full test suite",
+    "notes": "Slice: /Users/demo/projects/project_plans/demo/todo/demo_epic_fb2_djvu_formats/phase_1_fb2_parser.md\nMaster: /Users/demo/projects/project_plans/demo/todo/demo_epic_fb2_djvu_formats/plan.md\nFull implementation detail (code snippets, insertion points, done-when criteria) is in the slice file. Use /execute to implement.",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "feature",
+    "owner": "dev@example.com",
+    "created_at": "2026-04-08T07:22:42Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-07-31T21:43:22Z",
+    "labels": [
+      "android",
+      "dart",
+      "ios"
+    ],
+    "dependencies": [
+      {
+        "issue_id": "demo-g65.1",
+        "depends_on_id": "demo-g65",
+        "type": "parent-child",
+        "created_at": "2026-04-08T09:22:41Z",
+        "created_by": "Demo User",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 0,
+    "dependent_count": 2,
+    "comment_count": 0,
+    "parent": "demo-g65"
+  },
+  {
+    "id": "demo-g65",
+    "title": "FB2 \u0026 DjVu Format Support",
+    "description": "Add FB2 and DjVu format support to Demo and Plugin. FB2 via Dart-based conversion to EPUB at import time (Demo-only). DjVu via native page rendering in Plugin (DjVuLibre on Android, djvu-swift on iOS) then Demo integration.",
+    "notes": "Plan: /Users/demo/projects/project_plans/demo/todo/demo_epic_fb2_djvu_formats/plan.md\nThis epic's master plan contains the dependency table, cross-cutting concerns, and success criteria. Each child task has its own slice file with full implementation detail. Use /execute to implement.\nCross-project: Phases 1-2 and 7 are Demo. Phases 3-6 are Plugin (tracked in plugin/.beads).",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "epic",
+    "owner": "dev@example.com",
+    "created_at": "2026-04-08T07:22:28Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-07-31T21:43:22Z",
+    "labels": [
+      "android",
+      "dart",
+      "ios"
+    ],
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "demo-13xd",
+    "title": "StubBookRepository default makes a forgotten bookRepository injection read as 'no duplicate found'",
+    "description": "Code review of the demo-pdo epic, 2026-08-28.\n\ntest/features/opds/screens/opds_catalog_screen_test_harness.dart:94 - buildCatalogScreen defaults bookRepository to StubBookRepository(), whose findSimilarBook returns null unconditionally. OpdsDownloadHandler._findSimilarBook (lib/features/opds/mixins/opds_download_handler.dart:189) swallows every exception and returns null, so a future dedup test that forgets 'bookRepository:' reads as 'no duplicate found' and passes for the wrong reason.\n\nThe epic traded a loud-but-rare failure for a silent one: before, the real repository at least logged '[Dedup] Pre-check failed:'. Making the stub throw does NOT surface it, because of that catch.\n\nFix directions to weigh: make bookRepository required on buildCatalogScreen the way the feed-list harness made it required on pumpFeedListScreen (the 33 indifferent mounts then pass StubBookRepository() explicitly), or have the stub record its calls so a suite can assert it was never reached. The first is more consistent with the sibling harness; the second is cheaper.",
+    "status": "needs-plan",
+    "priority": 3,
+    "issue_type": "bug",
+    "owner": "dev@example.com",
+    "created_at": "2026-08-28T01:10:55Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-08-28T01:10:59Z",
+    "dependencies": [
+      {
+        "issue_id": "demo-13xd",
+        "depends_on_id": "demo-pdo",
+        "type": "discovered-from",
+        "created_at": "2026-08-28T03:10:54Z",
+        "created_by": "Demo User",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "demo-njar",
+    "title": "OPDS mount guard misses OpdsCatalogSheet, and the widgets/ suite it protects is out of its reach",
+    "description": "Code review of the demo-pdo epic, 2026-08-28.\n\ntest/features/opds/screens/opds_screen_mount_rules_test.dart bans OpdsCatalogScreen( and OpdsFeedListScreen( but not OpdsCatalogSheet(, which carries the identical hazard: lib/features/opds/widgets/opds_catalog_sheet.dart:113 does _bookRepository = widget.bookRepository ?? BookRepository().\n\nTwo gaps:\n1. In the guarded directory: opds_feed_list_interaction_test.dart mounts a real OpdsCatalogSheet (by tapping a catalog card) with no repository. It passes today only because it never reaches the download path. The next sheet assertion written there reintroduces the pending-timer flake the guard exists to prevent.\n2. Outside it: test/features/opds/widgets/opds_catalog_sheet_test.dart:226 declares 'BookRepository? bookRepository' on its buildSheet helper and defaults it to null, so most of its ~30 mounts construct a real BookRepository. The guard never reads that file - listSync() is non-recursive and scoped to test/features/opds/screens/.\n\nFix direction: add an OpdsCatalogSheet( rule, and decide whether the guard should walk test/features/opds/ rather than screens/ alone. Widening the scan means the widgets/ suites have to be routed through a harness first, so this is not a one-line change.",
+    "status": "needs-plan",
+    "priority": 3,
+    "issue_type": "bug",
+    "owner": "dev@example.com",
+    "created_at": "2026-08-28T01:10:47Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-08-28T01:10:50Z",
+    "dependencies": [
+      {
+        "issue_id": "demo-njar",
+        "depends_on_id": "demo-pdo",
+        "type": "discovered-from",
+        "created_at": "2026-08-28T03:10:47Z",
+        "created_by": "Demo User",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "demo-5srl",
+    "title": "OPDS feed list sheet test duplicates the screen harness fakes",
+    "description": "test/features/opds/widgets/opds_feed_list_sheet_test.dart defines private _FakeOpdsRepository and _MutableOpdsRepository that are near-copies of the public FakeOpdsRepository/MutableOpdsRepository now living in test/features/opds/screens/opds_feed_list_screen_test_harness.dart (created by demo-pdo.1).\n\nNot a defect: the sheet suite's fakes already keep it away from a real database, so there is no flake here. It is duplication only.\n\nNeeds a plan because the fix is a design call, not a mechanical edit: either a widgets/ test imports a harness that lives under screens/, or the shared fakes move to a neutral home both families can import. Pick one before editing.",
+    "status": "needs-plan",
+    "priority": 3,
+    "issue_type": "task",
+    "owner": "dev@example.com",
+    "created_at": "2026-08-27T22:01:31Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-08-27T22:01:34Z",
+    "dependencies": [
+      {
+        "issue_id": "demo-5srl",
+        "depends_on_id": "demo-pdo.1",
+        "type": "discovered-from",
+        "created_at": "2026-08-28T00:01:31Z",
+        "created_by": "Demo User",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "demo-5p6.2",
+    "title": "Phase 4: Tip counter on the same list",
+    "description": "Move ReaderTipProgress onto navigableToc, so all three consumers share one contents list. Carries a constructor change and a cache.\n\nSteps:\n4.1 Read reader_tip_progress.dart in full including docstrings - they carry the authority and bounce rules this must not break - both test files, and locatorFromLink/linkWithHref.\n4.2 Extract fixtures and the recorder helper into a new reader_tip_progress_test_harness.dart, and give EVERY fixture a readingOrder whose links carry a non-null type. Five top-level fixtures (_defaultToc:11, _perFileToc:19, _ambiguousIdToc:31, _splitFileToc:43, _pdfToc:50) plus six inline lists and one direct construction at 392. Pure move plus enrichment, no behaviour change, green before continuing. reader_tip_progress_chapters_test.dart is 273 non-comment LOC and goes over 300 without this.\n4.3 Three new cases, RED against the unchanged _chapterOf.\n4.4 Constructor takes a Publication callback, construction site in base_reader_screen.dart changes in place (that file is 299 non-comment LOC and must not gain a line), cache the navigable list beside the _hasContents latch, _chapterOf reads the cache.\n4.5 Integration.\n4.6 Docs: 01-product/features.md, 02-architecture/feature-structure.md.\n4.7 dart format, suite, architecture gate.\n\nTHE HAZARD: a Publication with tableOfContents and no readingOrder has every entry dropped by navigableToc, so contents.isEmpty, _chapterOf returns null, and EVERY chapter test fails at once - not one, all of them. That is why 4.2 comes first.\n\nRegression, run these specifically: the 5 -\u003e 4 -\u003e 5 stale-locator case and the shared id=top case. They are what the authority and bounce rules exist for.\n\nCache safety: publication is assigned exactly once per reader screen (reader_locator_handler.dart:46), and the screen builds a new ReaderTipProgress per book. Do not latch an empty list - _hasContents owns the mode decision.",
+    "notes": "Slice: /Users/demo/projects/project_plans/demo/todo/demo_fix_navigable_toc_parity/phase_4_tip_counter_navigable.md\nMaster: /Users/demo/projects/project_plans/demo/todo/demo_fix_navigable_toc_parity/plan.md\nFull implementation detail (code snippets, insertion points, done-when criteria) is in the slice file. Use the execute skill to implement.\n\nDepends on demo-5p6.1, which carries the constraint bump to plugin ^0.19.0.",
+    "status": "open",
+    "priority": 3,
+    "issue_type": "task",
+    "owner": "dev@example.com",
+    "created_at": "2026-08-27T21:25:04Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-08-27T21:25:04Z",
+    "dependencies": [
+      {
+        "issue_id": "demo-5p6.2",
+        "depends_on_id": "demo-5p6.1",
+        "type": "blocks",
+        "created_at": "2026-08-27T23:25:07Z",
+        "created_by": "Demo User",
+        "metadata": "{}"
+      },
+      {
+        "issue_id": "demo-5p6.2",
+        "depends_on_id": "demo-5p6",
+        "type": "parent-child",
+        "created_at": "2026-08-27T23:25:04Z",
+        "created_by": "Demo User",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 1,
+    "dependent_count": 0,
+    "comment_count": 0,
+    "parent": "demo-5p6"
+  },
+  {
+    "id": "demo-5p6.1",
+    "title": "Phase 3: Enablement parity",
+    "description": "Bump the plugin constraint to ^0.19.0 and replace computeBoundaryState's inline where with navigableToc(publication), so enablement and the skip mixin index one identical list.\n\nSteps:\n3.1 Read readium_navigation_controller.dart, updateBoundaryState, and the locator-handler call sites (reader_locator_handler.dart:89, 123, 188, 212). Confirm 0.19.0 resolves.\n3.2 Add a parity group to test/features/reader/controllers/readium_navigation_controller_test.dart - the file already exists, 172 lines, with computeBoundaryState cases. Assert against navigableToc(publication) directly rather than a hardcoded index, so it breaks if the two lists diverge again. Middle case [A, B(unresolvable), C, D] with the reader in C expects (false, false); tail case [A, B(unresolvable)] with the reader in A expects (true, true) and its readingOrder must contain ONLY /ch1.xhtml, because navigation_helper.dart:110-115 enables next when spine files follow the last contents entry. These pass before and after - this is a refactor to a shared helper, so do not manufacture a fake red; their job is to fail if the lists diverge later.\n3.3 Bump the constraint, replace the filter, delete the comment above it - it claims the filter prevents an enabled button whose tap dies, which is false.\n3.4 Integration: reader_screen_controls_test.dart:84-151 already drives updateBoundaryState through a mounted screen with hand-built publications; named as regression coverage, no new scenario.\n3.5 Docs: 04-development/dependencies.md lines 36 and 298.\n3.6 dart format, suite, architecture gate.\n\nFixture hazard: a Publication with tableOfContents and no readingOrder has EVERY entry filtered out - locatorFromLink needs linkWithHref to find the resource and read its type.",
+    "notes": "Slice: /Users/demo/projects/project_plans/demo/todo/demo_fix_navigable_toc_parity/phase_3_enablement_parity.md\nMaster: /Users/demo/projects/project_plans/demo/todo/demo_fix_navigable_toc_parity/plan.md\nFull implementation detail (code snippets, insertion points, done-when criteria) is in the slice file. Use the execute skill to implement.\n\nBLOCKED until plugin 0.19.0 is published. Phases 1 and 2 are plugin-en7u and plugin-nxv6 in the plugin DB (run bd from /Users/demo/projects/plugin). bd cannot express that edge across DBs - it lives here and in the master plan's dependency table.",
+    "status": "open",
+    "priority": 3,
+    "issue_type": "task",
+    "owner": "dev@example.com",
+    "created_at": "2026-08-27T21:24:51Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-08-27T21:24:51Z",
+    "dependencies": [
+      {
+        "issue_id": "demo-5p6.1",
+        "depends_on_id": "demo-5p6",
+        "type": "parent-child",
+        "created_at": "2026-08-27T23:24:51Z",
+        "created_by": "Demo User",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 0,
+    "dependent_count": 1,
+    "comment_count": 0,
+    "parent": "demo-5p6"
+  },
+  {
+    "id": "demo-6dq",
+    "title": "OpdsCatalogScreen.navigateToEntry drops every injected collaborator when it pushes a nested screen",
+    "description": "navigateToEntry pushes a second OpdsCatalogScreen with only url, title and onBookAdded (lib/features/opds/screens/opds_catalog_screen.dart:241-251). None of the parent's injected collaborators are forwarded: bookRepository, opdsService, searchController, downloadManager, thumbnailManager, filterController, typeFilterController, audiobookAcquisition. The pushed screen's initState therefore takes every '?? real thing' fallback - BookRepository(), OpdsService.instance, its own managers and controllers.\n\nFound while planning demo-pdo. Two consequences.\n\nIn tests: any test that taps a subsection entry mounts a screen wired to production singletons, so the demo-pdo guard test cannot make 'no OPDS screen test reaches a real repository' literally true. It scans test/ only, and this construction is in lib/. Impact today is contained because BookRepository._db is lazy (core/data/book_repository.dart:31-34), so nothing opens until a repository method runs - i.e. only on the pushed screen's download path.\n\nIn the app: a nested catalog page silently stops sharing the parent's download manager, thumbnail manager and filter controllers. Whether that is intended (a fresh page wants fresh state) or a latent bug (in-flight downloads and the active language filter are lost one level down) has not been established - that is the first thing to settle.\n\nNot investigated: whether any current test actually reaches the push, and whether the app has an observable symptom.",
+    "notes": "Discovered while planning demo-pdo, reported by the phase 3 plan-slice worker and verified in the source.\n\nRecorded as known residue in /Users/demo/projects/project_plans/demo/todo/demo_fix_opds_widget_tests_real_db/phase_3_mount_helper_guard.md (constraint 6). Deliberately out of scope there - that epic is test-only and changes no production code.\n\nNeeds /investigate first: decide whether dropping the collaborators is intended before deciding what to forward.\n\nEVIDENCE ADDED 2026-08-28 (code review of the demo-pdo epic): this is not only latent. test/features/opds/screens/opds_catalog_download_options_guard_test.dart:178 'navigates for category entry when download options return null' taps Fiction, which runs navigateToEntry and pushes a screen with no opdsService/downloadManager/bookRepository. The pushed screen builds a real OpdsService and makes a LIVE NETWORK CALL during the widget test - the run logs 'HTTP GET attempt 1/3 (timeout: 12s) -\u003e https://example.com/browse/fiction.opds?query=l.en\u0026sort_order=downloads' then Status 400. HttpService's 12s timeout and retry backoff are Timers, and testWidgets fakes timers, so on a host where example.com is black-holed rather than refused the request future never completes, the fake timeout never fires, and the test dies at teardown with a pending timer - the same failure class demo-pdo was opened to remove. The demo-pdo guard cannot see it: the construction is in lib/, and the guard scans test/.\n\nFix direction is either half of this: forward the collaborators in navigateToEntry (production, this bead), or make that test assert the push with a NavigatorObserver instead of letting the route build (test side).",
+    "status": "needs-plan",
+    "priority": 3,
+    "issue_type": "bug",
+    "owner": "dev@example.com",
+    "created_at": "2026-08-27T20:42:08Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-08-28T01:10:38Z",
+    "dependencies": [
+      {
+        "issue_id": "demo-6dq",
+        "depends_on_id": "demo-pdo",
+        "type": "discovered-from",
+        "created_at": "2026-08-27T22:42:08Z",
+        "created_by": "Demo User",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "demo-5p6",
+    "title": "Chapter-button enablement and the skip mixin flatten different TOC lists",
+    "description": "ROOT CAUSE (proven 2026-08-27): neither decideSkipToNext nor decideSkipToPrevious checks that the entry it selects can produce a locator - both return NavigationDecision.navigate(toc[newIndex], newIndex) unconditionally (navigation_helper.dart:120-122, 233-235). The mixin discovers the null only after deciding and silently returns (toc_skip_navigation_mixin.dart:145-148). demo's filter compensates downstream of that, in the one place that cannot fix it, and in doing so indexes a different list than the mixin.\n\nWorked example: toc [A, B(unresolvable), C, D], reader in C. Enablement indexes filtered [A,C,D] and puts C at 1, so previous targets A and the button is enabled. The mixin indexes [A,B,C,D], puts C at 2, targets B, gets a null locator and returns. Button enabled, tap does nothing.\n\nCORRECTION: the reasoning originally recorded here - that the filter is there on purpose because without it a button can be enabled whose tap dies - is WRONG. decideSkipToPrevious returns canNavigate: true for the unresolvable entry either way, so the button is enabled and the tap dies with or without the filter. The filter changes only index arithmetic, which is what breaks parity. It does earn its place at the tail: with toc [A, B(unresolvable)] and the reader in A, the filtered list makes decideSkipToNext take its already-at-last-chapter branch and correctly disable next.\n\nApproved fix: add navigableToc(publication) to plugin's toc_matcher (flatten + drop entries with no locator); use it in the skip mixin, in demo's computeBoundaryState, and - per the user's Gate 2 choice - in ReaderTipProgress too, which changes its constructor from a List\u003cLink\u003e callback to a Publication callback and needs a cached list to keep the per-locator-event cost down. Ships as plugin 0.19.0.\n\nLatent defect found by inspection during demo-i2q. No real book is known to trigger it.",
+    "notes": "Master: /Users/demo/projects/project_plans/demo/todo/demo_fix_navigable_toc_parity/plan.md\nThis epic's master plan carries the dependency table, the fixture hazard every phase turns on, and the epic-wide success criteria. Each child task has its own slice file with full implementation detail.\n\nCross-repo: phases 1 and 2 are plugin-en7u and plugin-nxv6 in the plugin DB (run bd from /Users/demo/projects/plugin). This epic holds the two demo phases, demo-5p6.1 and .2. bd cannot express the cross-DB edge, so it lives here and in the master plan's dependency table: neither demo phase can start until plugin 0.19.0 is published, which is the user's step.\n\nInvestigation: /Users/demo/projects/project_plans/demo/investigations/demo_invest_toc_navigability_parity.md\nRoot cause confirmed and fix approved. Two corrections were appended during planning - read the Correction section before working any phase.\n\nUse the execute skill to implement.",
+    "status": "open",
+    "priority": 3,
+    "issue_type": "bug",
+    "owner": "dev@example.com",
+    "created_at": "2026-08-27T07:53:41Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-08-27T21:25:14Z",
+    "dependencies": [
+      {
+        "issue_id": "demo-5p6",
+        "depends_on_id": "demo-i2q",
+        "type": "discovered-from",
+        "created_at": "2026-08-27T09:53:40Z",
+        "created_by": "Demo User",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "demo-ygy",
+    "title": "Give HttpService an instance override so services below AudiobookAcquisition can be faked",
+    "description": "Discovered while wiring Phase 3's catalog-sheet integration scenarios (epic demo-64y). HttpService.instance is a bare `static final` (lib/core/services/http_service.dart:17) with no setter and no forTesting override at the singleton level, so nothing below an injected AudiobookAcquisition can be faked from a widget/integration test: every test that wants faked network has to construct the whole acquisition graph by hand and pass it in through a widget seam. Wanted: the same shape BookDownloadManager already has (setInstanceForTesting + a test override field), or an equivalent, so a test can swap the app-wide client. Touches a core singleton used app-wide, so it needs a plan before anyone edits it.",
+    "status": "needs-plan",
+    "priority": 3,
+    "issue_type": "task",
+    "owner": "dev@example.com",
+    "created_at": "2026-08-23T14:35:34Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-08-23T14:35:47Z",
+    "dependencies": [
+      {
+        "issue_id": "demo-ygy",
+        "depends_on_id": "demo-64y.3",
+        "type": "discovered-from",
+        "created_at": "2026-08-23T16:35:34Z",
+        "created_by": "Demo User",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "demo-rch",
+    "title": "EPUB highlighting is unblocked by the plugin 0.17.0 decoration fix",
+    "description": "docs/04-development/constraints.md used to blame plugin for highlighting being off: 'incomplete highlighting support'. That reason is dead. applyDecorations reached neither platform before plugin 0.17.0 - Android looked for a decorationId key Dart never sends and cast a map to String, iOS force-cast the payload to [String] - and both decoders now read what Dart actually sends. Wire format: plugin/docs/api-reference/decorations.md. What is still missing is demo's own: a text-selection gesture in the reader, a highlight model, storage for it, and a way to list and delete highlights. Constraints doc corrected in demo-zmw.1; de-scoped from that epic and deliberately unparented.",
+    "status": "needs-plan",
+    "priority": 3,
+    "issue_type": "feature",
+    "owner": "dev@example.com",
+    "created_at": "2026-08-20T11:09:41Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-08-20T11:09:58Z",
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "demo-7qm",
+    "title": "Split integration_test/file_import_flow_test.dart (716 LOC) into per-flow files",
+    "description": "The file bundles several unrelated app-level flows (first-launch shelf, speed dial, OPDS catalog open, import) in one 716-line suite, three times the 300-LOC architecture gate. It surfaced as a LOC waiver while demo-5k4 added a corner-radius assertion to the first-launch shelf block. Split by flow so each file names one concrete journey. Needs a device to verify — the integration suite cannot run headless here.",
+    "status": "needs-plan",
+    "priority": 3,
+    "issue_type": "task",
+    "owner": "dev@example.com",
+    "created_at": "2026-08-13T17:08:34Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-08-13T17:08:37Z",
+    "dependencies": [
+      {
+        "issue_id": "demo-7qm",
+        "depends_on_id": "demo-5k4",
+        "type": "discovered-from",
+        "created_at": "2026-08-13T19:08:34Z",
+        "created_by": "Demo User",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "demo-y0k",
+    "title": "Split the completion arm out of AudiobookPlaybackService (301 LOC)",
+    "description": "audiobook_playback_service.dart crossed the 300-LOC gate threshold during Phase 15 (demo-1wx.13), which added isPlaying to the PlaybackSession contract. The meaningful split is the completion arm — shouldOfferCompletion, shouldOfferEndCompletion, markCurrentBookFinished, markCurrentBookCompleted, _markCompleted — which is a second responsibility (deciding and recording that a book is finished) sitting inside an engine whose job is driving playback. It is a behavioural refactor of the audio path and needs a device run to verify, so Phase 15 took a LOC waiver instead. See the waiver reasoning in project_plans/demo/todo/demo_feat_3_0_0_launch_readiness/phase_15_tip_service.md.",
+    "status": "needs-plan",
+    "priority": 3,
+    "issue_type": "task",
+    "owner": "dev@example.com",
+    "created_at": "2026-08-13T10:29:50Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-08-13T10:29:59Z",
+    "dependencies": [
+      {
+        "issue_id": "demo-y0k",
+        "depends_on_id": "demo-1wx.13",
+        "type": "discovered-from",
+        "created_at": "2026-08-13T12:29:49Z",
+        "created_by": "Demo User",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "demo-87w",
+    "title": "Reader settings toggle ignores plugin's effective layout state",
+    "description": "For a publication Readium lays out vertically (CJK metadata), the reader scrolls regardless of the stored verticalScroll preference. demo keeps showing 'page by page' and computes enableEdgeTapNavigation from its own pref, so the settings sheet lies about what the reader is doing.",
+    "notes": "Consume the effective-settings signal plugin will expose, and drive the reader UI from the reported effective settings instead of the stored preference.\nTouch points: lib/features/reader/screens/readium_reader_screen.dart:194-211 (builds EPUBPreferences, computes enableEdgeTapNavigation from _readerPrefs.verticalScroll), lib/features/reader/widgets/settings/reader_navigation_toggles.dart:104-141 (_ScrollModeToggle), lib/features/reader/services/reader_preferences_service.dart:61 (stored verticalScroll).\n\nCORRECTED 2026-08-20: the earlier note claimed 'consume ReadiumReaderWidget.onEffectiveSettingsChanged (plugin \u003e= 0.17.0)'. That API does not exist and is NOT in 0.17.0 - a grep over plugin/lib, plugin_platform_interface/lib and plugin/docs on branch feat/native-tap-callback returns nothing. It is owned by plugin-a4n (epic, open) whose six phases a4n.1..a4n.6 are all still open. So this bead waits on that epic shipping, in whatever release follows 0.17.0 - not on 0.17.0 itself.\nRelated: plugin-cp1 (root cause + fix), plugin-a4n (implementation epic). Cross-repo, so no bd dependency edge.\nPlan context: /Users/demo/projects/project_plans/plugin/todo/plugin_fix_effective_scroll_mode/plan.md",
+    "status": "needs-plan",
+    "priority": 3,
+    "issue_type": "bug",
+    "owner": "dev@example.com",
+    "created_at": "2026-08-09T14:49:32Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-08-20T08:05:37Z",
+    "labels": [
+      "reader"
+    ],
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "demo-9sa",
+    "title": "Restrict the Google Books dev key and scrub local debug logs",
+    "description": "The key that demo-b4k was about was hardcoded in a tracked, pushed file: scripts/run_debug.sh line 36, added in commit bbab6f62 'feat: debug runner script' (2026-05-26). Anyone with repo access, and anyone who cloned since May, already has it. Log redaction does not reduce that exposure.\n\nThe inline value is removed from the script now (it reads GOOGLE_BOOKS_API_KEY from the environment or a gitignored .env), and .env is gitignored. That stops future exposure but not past exposure — the value is still reachable via git log.\n\nOPERATOR ACTIONS (cannot be done from code):\n1. Rotate the key in the Google Cloud console. Delete the old one.\n2. Restrict the replacement: Books API only, plus an application restriction (iOS bundle id com.example.demo / Android package + SHA-1).\n3. Put the new value in the gitignored .env at the repo root as GOOGLE_BOOKS_API_KEY=..., or export it in your shell. .vscode/launch.json keeps its YOUR_KEY_HERE placeholder.\n4. Optional, after rotation: scrub the value from history (git filter-repo) and force-push. Rotation is the real mitigation; a rewrite only tidies up.\n5. Check the Google Cloud usage graph for the old key for traffic you do not recognise.\n\nAlso: test_logs/debug_output/*.log still contain the old key in plain text. Those files are local. Delete or scrub them.",
+    "notes": "REASSESSED — rotation is optional, not required.\n\nRepo is private, 0 forks, sole collaborator demo (gh api repos/demo/demo: visibility private, forks_count 0). The dev key sat in tracked scripts/run_debug.sh from bbab6f62 to 4ba1b257, but a private single-owner repo disclosed it to nobody. No third party got it through git.\n\nProd keys were never committed at all (verified: git log --all -S\u003cvalue\u003e returns nothing for either).\n\nSo the git-history angle is closed. Rotate only if you want the hygiene; there is no incident to respond to.\n\nWHAT STILL HAS VALUE, independent of the leak:\n1. Restrict the key in the Google Cloud console: Books API only, plus an app restriction (iOS bundle id com.example.demo / Android package + SHA-1). Any --dart-define key is recoverable by decompiling the binary, which docs/06-deployment/ci-cd.md:192 already notes. Restriction is the real mitigation there, not secrecy. This was the original bug's ALSO item and is still unverified.\n2. Delete or scrub test_logs/debug_output/*.log — they hold the key in plaintext. Local only. This is the artifact demo-b4k was actually about: a shared debug log.\n3. Optional: check which value the GitHub Actions secret GOOGLE_BOOKS_API_KEY holds (docs/06-deployment/ci-cd.md:178).\n\nDropped P0 -\u003e P3 and bug -\u003e chore. The scripts/run_debug.sh fix stays regardless: a key in a tracked file is wrong even in a private repo, and it cost nothing to source it from .env instead.",
+    "status": "open",
+    "priority": 3,
+    "issue_type": "chore",
+    "owner": "dev@example.com",
+    "created_at": "2026-07-31T18:35:53Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-07-31T23:44:42Z",
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "demo-vi4",
+    "title": "Verify Android Auto projected browse UI on an AA-capable phone",
+    "description": "Phase 8 (demo-84m.3) is verified through Google's Media Controller Test app: on a real Android 15 phone, binding PluginMediaService starts the process with no activity, DemoCarApplication boots the carMain engine, and the browse root returns Continue / Library / Search. What is still unseen is how a head unit RENDERS that tree.\n\nBLOCKED ON HARDWARE, not on code. The available phone (Redmi Note 14 5G, serenity_eea, HyperOS V140 / Android 15) ships no Android Auto: com.google.android.projection.gearhead is absent from the ROM and pm list features declares no car features, so Play reports the app incompatible.\n\nSideloading AA 17.4.663004 gets most of the way and then stops: install succeeds (base + arm64_v8a + xhdpi + en splits via adb install-multiple), the settings UI opens, developer mode unlocks, Unknown sources takes, the head unit server (DeveloperHeadUnitNetworkService) runs, AA lists 'Demo: 3.0.0 (187)' among its packages, and the DHU connects over tcp:5277. But projection never starts -- DHU 'screenshot' answers 'Don't have video focus', and logcat shows GMS launching com.google.android.gms.carsetup.START_DUPLEX -\u003e gmscorecompat.FirstActivityImpl -\u003e START_CLASS_NOT_FOUND. That activity ships android:enabled=false in the APK and Play services only enables it on AA-supported devices. adb shell pm enable is refused (SecurityException: Shell cannot change component state for another package) without root.\n\nTO CLOSE: borrow any phone whose OEM ships Android Auto (Pixel, Samsung, mid/high-tier Xiaomi). Install the demo debug APK, enable AA developer mode + Unknown sources, Start head unit server, adb forward tcp:5277 tcp:5277, run $ANDROID_HOME/extras/google/auto/desktop-head-unit. Confirm: the media app list shows Demo; Continue / Library / Search list real books BEFORE playback starts; a force-stop then a fresh browse still works.\n\nNOTE while checking: EPUBs will be missing from the tree until plugin-z3v is fixed (ReadiumReader.application throws in the headless process, so the TTS voice query fails and only audiobooks pass the read-aloud filter). Full recipe in the slice's Verification section.",
+    "notes": "Slice: /Users/demo/projects/project_plans/demo/todo/demo_epic_car_library_refresh/phase_8_demo_android_car_host.md",
+    "status": "open",
+    "priority": 3,
+    "issue_type": "task",
+    "owner": "dev@example.com",
+    "created_at": "2026-07-31T13:45:04Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-07-31T23:44:42Z",
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "demo-8o9",
+    "title": "Debug-only semantics assertion from upstream Flutter 3.44 regression",
+    "description": "Debug run threw a framework semantics assertion right after a book finished auto-categorization.\n\nEVIDENCE\nLog: /Users/demo/projects/demo/test_logs/debug_output/20260730_224508.log (lines 276-302)\n- 22:48:29.734 'Categorization completed for \"Majoor Frans\" - fiction(google_books)'\n- next frame: EXCEPTION CAUGHT BY SCHEDULER LIBRARY\n  'package:flutter/src/rendering/object.dart' line 6670: failed assertion identical(childRenderObject, parentRenderObject)\n  #2 _SemanticsGeometry.computeChildGeometry\n  #3 _RenderObjectSemantics._updateChildGeometry\n  #5 PipelineOwner.flushSemantics\n  #7 RendererBinding.drawFrame\nOnly reachable with semantics enabled (an accessibility client attached), which is why the normal debug runs stay silent.\n\nLEAD (hypothesis, not yet proven)\nfeatures/home/widgets/library_genre_chips.dart hands every genre a GlobalKey (_chipKeys.putIfAbsent) and re-sorts _sortedGenres when the genre set changes. A completed categorization adds a genre, so a keyed chip can move to a new parent inside the same frame - the shape the assertion checks for. Needs confirmation before any fix.\n\nNEXT STEPS\n1. Reproduce with semantics on (accessibility client or CarPlay session attached): import a book, let auto-categorization assign its first genre, watch the frame after.\n2. Confirm or rule out the genre-chip GlobalKey reparenting with a widget test that swaps the genre list under SemanticsBinding.\n3. Check the Flutter tracker for the same assertion signature before changing app code.\n\nFound while verifying demo-84m.2 (CarPlay refresh observer) on the simulator. Unrelated to that change - the Swift observer only repaints CarPlay templates.",
+    "notes": "ROOT CAUSE FOUND — upstream Flutter regression, not app code.\n\nUpstream: https://github.com/flutter/flutter/issues/189902 (open, P2, team-accessibility). SemanticsNode._replaceChildren can leave a parent holding a stale child reference; the next flushSemantics then walks a parent/child pair whose render objects are no longer ancestor/descendant and trips the assert. A comment on 2026-07-27 reports this exact assertion (object.dart:6670, _SemanticsGeometry.computeChildGeometry) on Flutter 3.44.8 around overlay dismissal / app focus loss. Reporters saw it start after upgrading 3.38.5 -\u003e 3.44.x. demo runs 3.44.7.\n\nRuled out in demo (tested, semantics enabled via tester.ensureSemantics()):\n- library_genre_chips GlobalKey chips reparenting on the pin/centered layout switch, including add-a-genre while the row still overflows, frame by frame: clean.\n- the onboarding firstGenreChipKey moving to a different chip when a genre sorts first: clean.\n- keyed first book shifting grid slot when a download placeholder is removed: clean.\n- the edit-mode Card -\u003e KeyedSubtree swap that moves firstBookCardKey/firstBookCoverKey: clean.\nAlso: the log shows Gevoel en verstand already produced fiction+romance at 22:48:14, so the distinct genre set very likely did not change when Majoor Frans completed as fiction at 22:48:29 - the chip-reset path was probably never entered.\n\nImpact: debug only (asserts stripped in profile/release). An attached accessibility client can read stale node geometry while the tree is inconsistent.\n\nAction: blocked on upstream. Documented in demo/docs/04-development/constraints.md -\u003e 'Semantics Assertion in Debug Builds (upstream)'. Re-check on each Flutter stable upgrade; if it becomes disruptive, the fallback is pinning the SDK back to 3.38.5 (user decision, affects the whole toolchain).\n\nLog evidence: /Users/demo/projects/demo/test_logs/debug_output/20260730_224508.log lines 276-302.",
+    "status": "blocked",
+    "priority": 3,
+    "issue_type": "bug",
+    "owner": "dev@example.com",
+    "created_at": "2026-07-30T20:51:35Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-07-31T23:44:42Z",
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "demo-juo",
+    "title": "Route book repository/seed tests through shared DB helper (drop inline schema copies)",
+    "description": "Several test files hand-copy the production books DDL inline (book_repository_test.dart is 1475 LOC; also book_repository_genre_filter_test, book_duplicator_test, database_helper_test, documents_folder_scanner_test_harness). Every books-column migration (e.g. v9 language) forces edits across all of them. Route them through test/helpers/database_helpers.dart (or DatabaseHelper.createDbForTest) so the schema lives in one place. Discovered during Phase 5 (demo-j67.5).",
+    "status": "open",
+    "priority": 3,
+    "issue_type": "task",
+    "owner": "dev@example.com",
+    "created_at": "2026-07-11T19:37:35Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-07-31T23:44:42Z",
+    "dependencies": [
+      {
+        "issue_id": "demo-juo",
+        "depends_on_id": "demo-j67.5",
+        "type": "discovered-from",
+        "created_at": "2026-07-11T21:37:35Z",
+        "created_by": "Demo User",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "demo-mb3",
+    "title": "Consolidate cover-image byte writers",
+    "description": "Four private copies of 'write cover bytes -\u003e covers/\u003cts\u003e_\u003cname\u003e.jpg' exist: PdfService._saveCoverImage, EpubCoverExtractor._saveBytes, book_processing_isolate._writeCbzCover, AudiobookMetadataExtractor._writeCover. Extract one shared cover-image store with its own test and migrate all four callers. Cross-cutting refactor across reader+library+isolate; kept out of demo-pf8.1 to keep that slice atomic.",
+    "status": "open",
+    "priority": 3,
+    "issue_type": "task",
+    "owner": "dev@example.com",
+    "created_at": "2026-06-14T11:30:36Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-07-31T23:44:42Z",
+    "dependencies": [
+      {
+        "issue_id": "demo-mb3",
+        "depends_on_id": "demo-pf8.1",
+        "type": "discovered-from",
+        "created_at": "2026-06-14T13:30:36Z",
+        "created_by": "Demo User",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "demo-m2r",
+    "title": "Localize CFBundleDisplayName per locale via InfoPlist.strings",
+    "description": "Optional follow-up from demo-dxt.2: decide whether Demo should use per-locale CFBundleDisplayName values in the generated InfoPlist.strings files. This changes the app name shown on the user's home screen, so it should be handled as a separate product decision from App Store Languages metadata support.",
+    "status": "open",
+    "priority": 3,
+    "issue_type": "task",
+    "owner": "dev@example.com",
+    "created_at": "2026-05-14T10:08:29Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-07-31T23:44:42Z",
+    "dependencies": [
+      {
+        "issue_id": "demo-m2r",
+        "depends_on_id": "demo-dxt.2",
+        "type": "discovered-from",
+        "created_at": "2026-05-14T12:08:28Z",
+        "created_by": "Demo User",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  },
+  {
+    "id": "demo-r1p",
+    "title": "Remove iPadOS 26.1 phantom-tap workaround once Flutter stable ships flutter#177992 fix",
+    "description": "Blocked on upstream Flutter stable release of PR #182391 (cherry-pick of the fix for flutter#177992). Once it lands in the stable channel demo rides, delete DemoWidgetsBinding, revert main.dart binding init, drop the constraints.md section and the three workaround tests. TODO: /Users/demo/projects/project_plans/demo/todo/demo_remove_ipados_phantom_tap_workaround.md. Originally landed on 2026-05-12 (commits 70ff0c7, 708577a).",
+    "status": "open",
+    "priority": 3,
+    "issue_type": "chore",
+    "owner": "dev@example.com",
+    "created_at": "2026-05-12T20:15:04Z",
+    "created_by": "Demo User",
+    "updated_at": "2026-07-31T21:43:24Z",
+    "dependency_count": 0,
+    "dependent_count": 0,
+    "comment_count": 0
+  }
+]

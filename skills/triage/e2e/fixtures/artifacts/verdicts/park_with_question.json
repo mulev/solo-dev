@@ -1,0 +1,13 @@
+{
+  "verdict": "PARK",
+  "defect_class": "root-cause-unproven",
+  "defects": [
+    {
+      "severity": "critical",
+      "location": "a.md:18",
+      "why": "Does the reader hold a second navigator reference after onReaderReady, or is _navigator the only one?"
+    }
+  ],
+  "confidence": 0.5,
+  "round": 1
+}

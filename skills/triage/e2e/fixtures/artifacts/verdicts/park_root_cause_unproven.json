@@ -1,0 +1,13 @@
+{
+  "verdict": "PARK",
+  "defect_class": "root-cause-unproven",
+  "defects": [
+    {
+      "severity": "critical",
+      "location": "a.md:12",
+      "why": "Is the retry counter reset by the caller, or does _attempt own it?"
+    }
+  ],
+  "confidence": 0.55,
+  "round": 1
+}

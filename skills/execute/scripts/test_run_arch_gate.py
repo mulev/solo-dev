@@ -34,8 +34,8 @@ def case_dart_reexport_shim_fails(tmp: Path) -> None:
         [
             "export 'dart:async';",
             "export 'dart:io';",
-            "export 'package:myapp/core/models/book.dart';",
-            "export 'package:myapp/features/library/services/book_file_picker.dart';",
+            "export 'package:demo/core/models/book.dart';",
+            "export 'package:demo/features/library/services/book_file_picker.dart';",
             "export 'package:flutter/material.dart';",
         ]
     )
@@ -163,6 +163,110 @@ def case_balanced_exports_and_code_passes(tmp: Path) -> None:
     f = write(tmp, "app.dart", body)
     code, out = run(f)
     assert "SHIM=PASS" in out, out
+    assert code == 0, (code, out)
+
+
+def case_python_docstring_prose_is_not_code(tmp: Path) -> None:
+    """A docstring is a string literal, not a comment and not `/*` delimited,
+    so the line filter never saw one and charged 43 lines of explanation to a
+    3-line module."""
+    prose = "\n".join(f"    line {n} of explanation." for n in range(1, 41))
+    body = (
+        f'"""Module summary.\n\n{prose}\n"""\n'
+        "import os\n"
+        "\n"
+        "def f(path):\n"
+        '    """One-line docstring."""\n'
+        "    return os.path.basename(path)\n"
+    )
+    f = write(tmp, "prose.py", body)
+    code, out = run(f, "--max-loc", "10")
+    assert "LOC=PASS(3+43doc)" in out, out
+    assert code == 0, (code, out)
+
+
+def case_python_data_blob_is_still_code(tmp: Path) -> None:
+    """Only a docstring is prose. An assigned triple-quoted literal is content
+    the file carries — `prompt-wizard/scripts/init_skill.py` holds an 86-line
+    one — and a triple-quote scanner would erase it from the count."""
+    blob = "\n".join(f"row {n}" for n in range(1, 41))
+    body = f'BLOB = """\n{blob}\n"""\n'
+    f = write(tmp, "blob.py", body)
+    code, out = run(f, "--max-loc", "10")
+    assert "LOC=FAIL(42>10)" in out, out
+    assert "doc)" not in out, out
+    assert code == 1, (code, out)
+
+
+def case_python_shim_denominator_excludes_prose(tmp: Path) -> None:
+    """Prose in the denominator dilutes the export ratio, so a barrel behind a
+    long docstring reads as a normal module: 4/37 instead of 4/5."""
+    prose = "\n".join(f"line {n}." for n in range(1, 31))
+    body = (
+        f'"""Barrel.\n\n{prose}\n"""\n'
+        "from a import *\n"
+        "from b import *\n"
+        "from c import *\n"
+        "from d import *\n"
+        "x = 1\n"
+    )
+    f = write(tmp, "barrel.py", body)
+    code, out = run(f)
+    assert "SHIM=FAIL(reexport=4/5)" in out, out
+    assert code == 1, (code, out)
+
+
+def case_unparsable_python_counts_every_line(tmp: Path) -> None:
+    """A gate that crashes on a half-edited or py2 file is worse than one that
+    overcounts it, so a file that will not parse counts as it always did.
+
+    The fixture carries a docstring ahead of the syntax error on purpose: with
+    no prose in it the assertion would hold even if `prose_lines` were deleted,
+    and could not tell the `SyntaxError` fallback from any other empty result.
+    """
+    body = (
+        '"""Module summary.\n\nline one.\nline two.\n"""\n'
+        "def broken(:\n" + "\n".join(["x = 1"] * 20) + "\n"
+    )
+    f = write(tmp, "broken.py", body)
+    code, out = run(f, "--max-loc", "10")
+    assert "LOC=FAIL(25>10)" in out, out
+    assert code == 1, (code, out)
+
+
+def case_python_over_the_limit_keeps_the_doc_suffix(tmp: Path) -> None:
+    """The suffix goes into both banner branches, and the FAIL branch ends in
+    `>` rather than `)` — so a `"doc)" not in out` assertion cannot catch a
+    regression that drops it there. This pins the FAIL render itself."""
+    prose = "\n".join(f"line {n}." for n in range(1, 21))
+    body = f'"""Summary.\n\n{prose}\n"""\n' + "\n".join(["x = 1"] * 12) + "\n"
+    f = write(tmp, "over.py", body)
+    code, out = run(f, "--max-loc", "10")
+    assert "LOC=FAIL(12+22doc>10)" in out, out
+    assert code == 1, (code, out)
+
+
+def case_a_block_comment_scanner_does_not_run_over_python(tmp: Path) -> None:
+    """Python has no `/* */`, so scanning for one reads a string literal as a
+    comment. Here `/*` sits in an assigned blob and the `*/` sits in a
+    docstring the prose filter removes, so the block never closes and the rest
+    of the file disappears from the count."""
+    body = (
+        'BLOB = """\n'
+        "/* opens a block\n"
+        '"""\n'
+        "\n"
+        "\n"
+        "def f():\n"
+        '    """closes */ here"""\n'
+        "    return 2\n"
+        "\n"
+        "\n"
+        "z = 3\n"
+    )
+    f = write(tmp, "blocks.py", body)
+    code, out = run(f)
+    assert "LOC=PASS(6+1doc)" in out, out
     assert code == 0, (code, out)
 
 
