@@ -150,7 +150,7 @@ def scan_plan_coverage(plans_dir, project: str, ids: list) -> dict:
     Shipped work counts, so done/ is scanned exactly like todo/: a bead
     covered by work that landed last month is as covered as one queued today.
     The root is an exact path join, so scanning `demo` never descends into
-    a sibling project tree such as `demo-site`.
+    a sibling project tree such as `demo-app`.
     """
     patterns = {bid: _id_pattern(bid) for bid in ids}
     coverage: dict = {}

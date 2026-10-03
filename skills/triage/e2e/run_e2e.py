@@ -94,9 +94,10 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--root", type=Path,
                         help="where to build the testbed (default: the skills repo)")
     parser.add_argument("--skip-external", action="store_true",
-                        help="drop demo and plugin from the invariant "
-                             "sweep even when they are checked out here "
-                             "(absent ones are skipped either way)")
+                        help="drop the configured external repos "
+                             "(TRIAGE_GUARDED_EXTERNAL) from the invariant "
+                             "sweep even when they are checked out here; "
+                             "absent ones are skipped either way")
     args = parser.parse_args(argv)
     chosen = suites(args.live)
     if args.only and args.only not in chosen:
@@ -151,9 +152,11 @@ def main(argv: list[str]) -> int:
     # Say out loud which guarded trees are not being watched. A guard that
     # silently stops guarding is worse than no guard, because the green output
     # still reads as proof.
-    for tree in trees:
-        if not tree.external:
-            continue
+    external = [tree for tree in trees if tree.external]
+    if not external:
+        print(f"SKIP  invariant.external (none configured — set "
+              f"{suite_invariant.EXTERNAL_ENV} to guard sibling repos)")
+    for tree in external:
         if args.skip_external:
             print(f"SKIP  invariant.{tree.name} (--skip-external)")
         elif not tree.path.exists():

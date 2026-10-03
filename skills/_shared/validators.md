@@ -4,13 +4,13 @@ Automated proof that a phase is actually finished. Every repo owns three files a
 
 | File | What it is |
 |---|---|
-| `validate` | generic runner — placed by `./install repo` from the skills repo, never edited per repo |
+| `validate` | generic runner — placed verbatim at the repo root, never edited per repo |
 | `validators.conf` | the repo's rules: which command runs at which stage |
 | `ledger` | generated — the repo's last validation state, written by `validate run`, read by `validate verify`, committed with the work it proves |
 
 The runner decides nothing. The config decides everything. Tests, builds and native suites are the repo's business; the skill only knows *when* they must run and *who* runs them.
 
-**The runner is installed, never hand-copied.** `./install repo <path>` from the skills repo places `validate` at a target repo's root, and `./install check <path>` reports whether the copy there is current. That check exists because of a real failure: one repo sat on a runner 84 lines behind the origin for months, and nothing in the system could say so, because the file carried no version. `validators.conf` stays repo-owned — the installer writes one only into a repo that has none, from the `--stack` recipe, and never overwrites or edits an existing file.
+**The runner is placed, never edited.** It goes to a repo's root byte for byte and nothing about it is tuned per repo: behaviour lives in `validators.conf`, which is the repo's own file. The copy carries a version, and `./validate version` prints it, which is how you tell a current copy from one placed months ago and left behind. That matters because of a real failure: a repo sat on a runner 84 lines behind for months and nothing in the system could say so, because the file carried no version at all.
 
 ---
 
@@ -26,7 +26,7 @@ The runner decides nothing. The config decides everything. Tests, builds and nat
 
 Stages are deliberately coarse. The fast changed-file test runs belong to the TDD inner loop (execute Step 2.1), not here.
 
-**A repo may define its own on-demand stage, and `validate` already allows it.** The three stages above are the ones the execute skill drives; the runner treats the stage column as data everywhere except the `user` special case, so a name it has never heard of works with no change to `validate` — and none should be made, since that file is installed verbatim into every repo by `./install repo`. Use this for a check that is genuinely worth having and genuinely too slow for `phase-exit`: the skills repo's `e2e` stage builds three real issue databases and takes minutes. **The trade-off is real and must be written down where the stage is defined:** a stage nothing invokes rots, and unlike `phase-exit` no workflow will notice. So an on-demand stage names, at its definition, what change should send someone to run it — the skills repo's names changes under `triage/e2e/` or `triage/scripts/`. A stage with no such note is one nobody will think to run.
+**A repo may define its own on-demand stage, and `validate` already allows it.** The three stages above are the ones the execute skill drives; the runner treats the stage column as data everywhere except the `user` special case, so a name it has never heard of works with no change to `validate` — and none should be made, since that file goes into every repo verbatim. Use this for a check that is genuinely worth having and genuinely too slow for `phase-exit`: the skills repo's `e2e` stage builds three real issue databases and takes minutes. **The trade-off is real and must be written down where the stage is defined:** a stage nothing invokes rots, and unlike `phase-exit` no workflow will notice. So an on-demand stage names, at its definition, what change should send someone to run it — the skills repo's names changes under `triage/e2e/` or `triage/scripts/`. A stage with no such note is one nobody will think to run.
 
 ---
 
@@ -62,7 +62,7 @@ if ! resolve_device; then
 fi
 ```
 
-Measured cost of getting this wrong: plugin's integration runner listed devices without booting one, so with nothing booted it skipped the entire iOS suite and still exited 0. Every ledger row said `PASS`. The first run that actually executed that suite found two defects in the epic that had just shipped, one of them a thirty-minute hang on the feature's happy path.
+Measured cost of getting this wrong, on a multi-package Flutter plugin: its integration runner listed devices without booting one, so with nothing booted it skipped the entire iOS suite and still exited 0. Every ledger row said `PASS`. The first run that actually executed that suite found two defects in the epic that had just shipped, one of them a thirty-minute hang on the feature's happy path.
 
 **No config, no pass.** A repo without `validators.conf` fails the phase-exit gate. The only escape is an explicit ledger line `validators: none — <reason>` in the working file, which is a visible decision rather than a silent skip.
 
@@ -122,7 +122,7 @@ Markdown newer than the run is a `NOTE`, not a failure — updating a plan file 
 
 `DRIFT` and `NOTE` lines are reports, not failures: they explain the ledger, they do not condemn it. A `ledger` is generated and always stamped, so one carrying no provenance header is wrong rather than old — hand-written, truncated, or a paste of something else — and it fails.
 
-**Long stages need a supervised process.** A `finalize` stage that runs native and integration suites takes tens of minutes (measured: 38m19s in plugin). Launch it through the harness's process supervisor — `hub` `start` plus `wait` in omp — and give the run a name nothing else has used (`<stage>-<HHMMSS>`). A plain shell call risks a tool timeout killing the run halfway, which leaves you with no ledger and no idea which suite was in flight.
+**Long stages need a supervised process.** A `finalize` stage that runs native and integration suites takes tens of minutes (measured: 38m19s on a federated Flutter plugin with Dart, Kotlin, Swift and integration suites). Launch it through the harness's process supervisor — `hub` `start` plus `wait` in omp — and give the run a name nothing else has used (`<stage>-<HHMMSS>`). A plain shell call risks a tool timeout killing the run halfway, which leaves you with no ledger and no idea which suite was in flight.
 
 When it exits, read the result from `./ledger` and confirm it with `./validate verify <stage>`. **Never read validation state out of a process log.** A supervisor may replay a reused name's buffer: measured, `hub logs` on a restarted name returned the *previous* process's output while reporting the new one `running; cursor=0` — a nine-day-old `FAIL` block read as if it were the live run. The log is for diagnosing a red row (as is the directory the header's `log=` names), never for learning what a run concluded.
 
@@ -203,8 +203,70 @@ finalize   | build | bundle exec jekyll build
 **Shell / scripts repo**
 ```
 phase-exit | syntax | find . -name '*.sh' -not -path './.git/*' -exec sh -n {} +
-phase-exit | tests  | python3 execute/scripts/test_run_arch_gate.py
+phase-exit | tests  | python3 scripts/run_tests.py
+finalize   | syntax | find . -name '*.sh' -not -path './.git/*' -exec sh -n {} +
+finalize   | tests  | python3 scripts/run_tests.py
 ```
+
+**Go**
+```
+phase-exit | static | gofmt -l . | (! grep .) && go vet ./...
+phase-exit | tests  | go test ./...
+finalize   | tests  | go test -race ./...
+```
+
+**Rust**
+```
+phase-exit | static | cargo fmt --check && cargo clippy -- -D warnings
+phase-exit | tests  | cargo test
+finalize   | tests  | cargo test --all-features
+```
+
+---
+
+## Positive controls
+
+Some checks pass identically whether they ran or never loaded. A custom lint
+plugin is the clearest case: the analyzer exits 0 when your rules found nothing
+*and* when your rules were never wired in. A green row then proves nothing, and
+it is the kind of nothing that stays green for months.
+
+The fix is a second row that fails on purpose. Plant a known violation, run the
+check, and require the diagnostic back:
+
+```
+phase-exit | lint-plugin | for d in pkg pkg_platform_interface pkg/example; do (cd "$d" && dart analyze --fatal-infos) || exit 1; done
+phase-exit | lint-canary | ./scripts/check_lint_wiring.sh
+```
+
+where `check_lint_wiring.sh` writes a file that must trip each rule, runs the
+analyzer, asserts every expected diagnostic appeared, and cleans up. It exits
+non-zero when a rule is silent — which is exactly the state a bare `analyze`
+reports as success.
+
+Ask for a canary whenever a row's command could exit 0 without doing its work:
+custom lint or codegen plugins, an assertion helper that might be compiled out,
+a test runner whose discovery pattern could match nothing, a coverage gate whose
+source list could be empty. This is the same rule as *"a row that did not run is
+a failed row"* above, applied to a check that cannot tell you it did not run.
+
+---
+
+## Reading a repo's own runner before writing rows
+
+Most repos already have a test script. Prefer calling it with flags over
+reassembling its steps, and read what its flags actually do first:
+
+- If the runner already builds what it needs — most native test runners compile
+  the app before testing — do **not** add a separate build row. It pays twice.
+- If the runner defaults to a clean rebuild, put it in `finalize` with defaults
+  and in `phase-exit` with a cache-reuse flag.
+- If one sub-package needs a different tool than the rest (a pure-language
+  package inside a framework repo, where the framework's analyzer is the wrong
+  binary), give it its own row rather than bending the loop.
+- Leave a comment above each row explaining *why* it is shaped that way. The
+  next person to touch the config is deciding whether to move a row between
+  stages, and the timing rationale is the only thing that answers them.
 
 ---
 

@@ -36,7 +36,7 @@ ends on a question in prose has asked nothing.
 **Treat a cancelled or timed-out question as the conservative answer.** Take the option that proceeds
 no further, name it, and stop. A cancellation is never permission to continue.
 
-See `../_shared/tooling-examples.md` for the canonical call shape.
+See `../../_shared/tooling-examples.md` for the canonical call shape.
 
 **Triage asks the user nothing by design.** Exactly one thing reaches them mid-run: an escalation
 neither the brief nor `references/autonomy-charter.md` answers. Everything else already has a

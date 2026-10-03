@@ -44,7 +44,7 @@ tests assert:
    already covers, and `has_plan` is the only plan-coverage evidence
    `classify` holds. An epic gains children two ways, and they are disjoint:
    `plan` Step 8b gives every phase a `Slice:`+`Master:` note at creation,
-   while a followup parented under the workspace `AGENTS.md` Scope RULE
+   while a followup parented to an epic as it is discovered
    carries no plan path because no plan covers it. Gated on `has_plan`, this
    row therefore never changes a route — it selects the more specific of two
    `skip` reasons, the same kind of function property rule 1's retained
@@ -118,8 +118,8 @@ bead says — it is whether the fix decision has already been made.
 
 ## 4. Source of truth
 
-This file is the single definition of the routing rubric. The prose in the
-workspace `CLAUDE.md` `[Beads]` block is a pointer to it, not a second copy — if
+This file is the single definition of the routing rubric. Any prose about bead
+routing in your own instruction files is a pointer to it, not a second copy — if
 the two ever disagree, this file is right and the pointer is stale.
 
 `triage/scripts/inventory.py` is the executable form of section 1. Seven files

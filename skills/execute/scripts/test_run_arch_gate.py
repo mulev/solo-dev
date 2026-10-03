@@ -187,7 +187,7 @@ def case_python_docstring_prose_is_not_code(tmp: Path) -> None:
 
 def case_python_data_blob_is_still_code(tmp: Path) -> None:
     """Only a docstring is prose. An assigned triple-quoted literal is content
-    the file carries — `prompt-wizard/scripts/init_skill.py` holds an 86-line
+    the file carries — `a generator script in this bundle` holds an 86-line
     one — and a triple-quote scanner would erase it from the count."""
     blob = "\n".join(f"row {n}" for n in range(1, 41))
     body = f'BLOB = """\n{blob}\n"""\n'

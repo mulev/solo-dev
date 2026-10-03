@@ -180,7 +180,7 @@ def sample_guarded_trees(testbed) -> dict:
     plus the same hand-add.
 
     `--skip-external` is not plumbed in and must not be: `sample` is called
-    with its default, and an absent demo reads `ABSENT` on both sides of a
+    with its default, and an absent external repo reads `ABSENT` on both sides of a
     bracket, so `compare` never fires on it.
 
     The measured cost, per dispatch rather than concurrent — workers run one

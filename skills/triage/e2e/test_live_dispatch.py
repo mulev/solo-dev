@@ -359,11 +359,12 @@ def case_the_deny_list_names_every_tree_but_the_testbed() -> None:
     the settings source rather than the filesystem root, so that rule would
     match nothing.
 
-    Derived from the roster rather than listed, so a tree added to
-    `guarded_trees` and forgotten in `DENIED_TREES` fails here instead of
-    shipping as a watched-but-reachable path. Configured external repos are
-    denied even though every bracket already samples them, because a rule
-    refuses a write and a bracket only reports one.
+    Both sides derive from the roster now, so what this pins is that
+    `permission_settings` emits a Read and an Edit rule per non-testbed tree,
+    with the `//` anchor and the right path — not that the two lists agree,
+    which they do by construction. Configured external repos are denied even
+    though every bracket already samples them, because a rule refuses a write
+    and a bracket only reports one.
     """
     with mock.patch.dict(os.environ, {inv.EXTERNAL_ENV: "alpha,beta"}):
         trees = {tree.name: tree.path for tree in inv.guarded_trees()}

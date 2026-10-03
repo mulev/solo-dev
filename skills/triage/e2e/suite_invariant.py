@@ -473,9 +473,6 @@ def guarded_trees(root=None, external=None) -> list:
          for name in names]
 
 
-TREES = guarded_trees()
-
-
 def missing(specs) -> list:
     """Guarded trees that are not on disk, and are not excused.
 

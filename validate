@@ -1,8 +1,8 @@
 #!/bin/sh
-# Repo validators — generic runner. Placed at a repo root by `./install repo
-# <path>` from the skills repo, and never edited per repo; the repo's rules go
-# in ./validators.conf next to it. The runner decides nothing; the config
-# decides everything.
+# Repo validators — generic runner. Placed at a repo root verbatim and never
+# edited per repo; the repo's rules go in ./validators.conf next to it. The
+# runner decides nothing; the config decides everything. `./validate version`
+# prints the version this copy carries, which is how a stale one is found.
 #
 # Usage:
 #   ./validate list    <stage>
@@ -60,10 +60,10 @@
 #   _shared/validators.md
 set -u
 
-# The installer's `check` reads this line out of an installed copy to tell a
-# current runner from a stale one. Bump it whenever this file changes in a way
-# an installed copy must pick up. Keep it a plain top-level assignment on its
-# own line: `install` reads it with sed, never by sourcing this script.
+# Read out of a placed copy to tell a current runner from a stale one. Bump it
+# whenever this file changes in a way a placed copy must pick up. Keep it a
+# plain top-level assignment on its own line: it is read with sed, never by
+# sourcing this script.
 VALIDATE_VERSION=2
 CONF=${VALIDATORS_CONF:-./validators.conf}
 LEDGER=${VALIDATORS_LEDGER:-./ledger}

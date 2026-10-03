@@ -576,7 +576,7 @@ loudly here instead of quietly shortening the deny list.
 
 The testbed is the exception because it is the tree the worker is supposed to
 write in. The external repos are in the list not because the bracket
-misses them — `sample_guarded_trees` samples all four on every dispatch — but
+misses them — `sample_guarded_trees` samples every watched tree on every dispatch — but
 because a deny rule and a bracket are different instruments: the rule refuses
 the write, the bracket reports it afterwards. A tree you can make unreachable
 for the cost of two strings is not a tree worth merely watching. The deny list
