@@ -97,7 +97,7 @@ Read the investigation file for the full execution chain, supporting evidence, r
 
 ## Component Decomposition
 
-Atomic units this plan creates or modifies. Each component owns one logical action, passes the Meaningfulness Test, and is unit-testable in isolation. The smell threshold is ≤`{max_file_loc}` LOC — beyond that, either split (if every candidate split passes the Meaningfulness Test) or take a `**LOC waiver:**`. See `../_shared/architecture-principles.md`.
+Atomic units this plan creates or modifies. Each component owns one logical action, passes the Meaningfulness Test, and is unit-testable in isolation. The smell threshold is ≤`{max_file_loc}` LOC — beyond that, either split (if every candidate split passes the Meaningfulness Test) or take a `**LOC waiver:**`. See `../../_shared/architecture-principles.md`.
 
 | Component | Responsibility (one sentence, no "and") | Public API | Callers (≥2 OR single-caller + own test) | Foreign modules touched | Projected LOC | Test approach |
 |-----------|------------------------------------------|------------|------------------------------------------|-------------------------|---------------|---------------|
@@ -238,7 +238,7 @@ For each non-English locale: adopt the role of a native speaker to produce natur
 - [ ] {Manual verification step 2}
 
 ### Phase exit
-- Run from the repo root: `./validate run phase-exit` — every row PASS, then `./validate verify phase-exit` (no file argument) exits 0. The run writes the repo's `ledger`; record the verdict line and the ledger's commit in the `### Validation` block of this file's `## Architecture Gate Results`, and stage `ledger` with the phase commit. See `../_shared/validators.md`.
+- Run from the repo root: `./validate run phase-exit` — every row PASS, then `./validate verify phase-exit` (no file argument) exits 0. The run writes the repo's `ledger`; record the verdict line and the ledger's commit in the `### Validation` block of this file's `## Architecture Gate Results`, and stage `ledger` with the phase commit. See `../../_shared/validators.md`.
 
 ## Success Criteria
 
@@ -310,7 +310,7 @@ Read the investigation file for the full execution chain, supporting evidence, r
 
 ## Architecture Boundaries
 
-Modular-monolith placement for code introduced by this epic. See `../_shared/architecture-principles.md`.
+Modular-monolith placement for code introduced by this epic. See `../../_shared/architecture-principles.md`.
 
 - **Feature/domain modules touched:** {e.g., `lib/features/reader/`, `lib/features/library/`}
 - **New modules introduced:** {list, with single-sentence responsibility each — or "None"}
@@ -418,7 +418,7 @@ Each slice file is self-contained for execution — a tracker task points to thi
 
 ## Component Decomposition
 
-Atomic units this phase creates or modifies. Each component owns one logical action, passes the Meaningfulness Test, and is unit-testable in isolation. The smell threshold is ≤`{max_file_loc}` LOC — beyond that, either split (if every candidate split passes the Meaningfulness Test) or take a `**LOC waiver:**`. See `../_shared/architecture-principles.md`.
+Atomic units this phase creates or modifies. Each component owns one logical action, passes the Meaningfulness Test, and is unit-testable in isolation. The smell threshold is ≤`{max_file_loc}` LOC — beyond that, either split (if every candidate split passes the Meaningfulness Test) or take a `**LOC waiver:**`. See `../../_shared/architecture-principles.md`.
 
 | Component | Responsibility (one sentence, no "and") | Public API | Callers (≥2 OR single-caller + own test) | Foreign modules touched | Projected LOC | Test approach |
 |-----------|------------------------------------------|------------|------------------------------------------|-------------------------|---------------|---------------|
@@ -480,7 +480,7 @@ Describe all tests BEFORE writing any implementation code. TDD red-green cycle i
 ## Verification
 
 - TDD inner loop: `{test command}` on the changed test files.
-- Phase exit, run from the repo root: `./validate run phase-exit` — every row PASS, then `./validate verify phase-exit` (no file argument) exits 0. The run writes the repo's `ledger`; record the verdict line and the ledger's commit in this file's `### Validation` block, and stage `ledger` with the phase commit. See `../_shared/validators.md`.
+- Phase exit, run from the repo root: `./validate run phase-exit` — every row PASS, then `./validate verify phase-exit` (no file argument) exits 0. The run writes the repo's `ledger`; record the verdict line and the ledger's commit in this file's `### Validation` block, and stage `ledger` with the phase commit. See `../../_shared/validators.md`.
 
 ## Files Created
 
