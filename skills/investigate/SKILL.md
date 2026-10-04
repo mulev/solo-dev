@@ -78,6 +78,10 @@ See `../_shared/tooling-examples.md` for the canonical call shape.
 
 Where the rest of this skill says `AskUserQuestion`, treat it as a placeholder for whichever tool resolved above.
 
+**Delegated triage runs only.** If your brief names `../_shared/autonomous-mode.md`, read it before Gate 1:
+it redirects the Step 5a output root, substitutes both gates with an independent QC verdict, and suspends
+the Step 5d tracker write. Echo its contract token in your report. No other invocation is affected.
+
 ---
 
 ## Invoking companion skills
@@ -137,7 +141,7 @@ The resolved investigations directory is `{plans_dir}/{project}/{investigations_
 
 ### Step 0: Define the problem
 
-**If the user's request is a bare tracker ID** (e.g. `myapp-37h`), that ID is the investigation's subject. Run `{tracker_cli} show <id>` from the repo root that owns the ID's prefix — never from a parent directory — and treat its description and notes as the initial report. Record the ID; Step 5d writes back to it.
+**If the user's request is a bare tracker ID** (e.g. `plugin-37h`), that ID is the investigation's subject. Run `{tracker_cli} show <id>` from the repo root that owns the ID's prefix — never from a parent directory — and treat its description and notes as the initial report. Record the ID; Step 5d writes back to it.
 
 A prior investigation referenced in the bead's notes may belong to a *different* bug that merely spawned this one. Read it as context, never as this bead's answer, and never treat a cause the bead's title asserts as already proven.
 
@@ -195,10 +199,10 @@ Compile your findings into a structured analysis. Present it to the user as a te
 **Problem:** {one-sentence description of the observed bug}
 
 **Execution chain:**
-1. {Step 1}: {what happens} — *evidence: {file:line or doc reference}*
-2. {Step 2}: {what happens} — *evidence: {file:line or doc reference}*
+1. {Step 1}: {what happens} — *evidence: {repo-relative/path.ext:line, or doc reference}*
+2. {Step 2}: {what happens} — *evidence: {repo-relative/path.ext:line, or doc reference}*
 3. ...
-N. {Failure point}: {what goes wrong and why} — *evidence: {file:line or doc reference}*
+N. {Failure point}: {what goes wrong and why} — *evidence: {repo-relative/path.ext:line, or doc reference}*
 
 **Root cause:** {precise explanation of why the bug exists, with evidence}
 
@@ -210,25 +214,27 @@ N. {Failure point}: {what goes wrong and why} — *evidence: {file:line or doc r
 **What was ruled out:** {alternative hypotheses you investigated and disproved, with evidence for why they are not the cause}
 </analysis-format>
 
+**Write every code citation as a full repo-relative path** — `lib/features/reader/services/reader_service.dart:41`, never `reader_service.dart:41`, including on the second mention of a file you already named. A bare filename makes the reader hunt for the evidence, and once a second file of that name exists it points at the wrong one while still looking valid.
+
 <example>
 **Problem:** Tapping "Resume reading" opens the book at page 1 instead of the saved position.
 
 **Execution chain:**
 1. User taps "Resume reading" button → calls `ReaderBloc.openBook(bookId, resume: true)` — *evidence: `lib/features/library/widgets/book_card.dart:142`*
 2. `ReaderBloc.openBook` calls `progressRepository.getLastPosition(bookId)` → returns `ReadingPosition(locator: Locator(...), updatedAt: ...)` — *evidence: `lib/features/reader/bloc/reader_bloc.dart:87`, confirmed non-null via database query*
-3. `openBook` passes the locator to `readerService.open(publication, initialLocator: locator)` — *evidence: `reader_bloc.dart:93`*
+3. `openBook` passes the locator to `readerService.open(publication, initialLocator: locator)` — *evidence: `lib/features/reader/bloc/reader_bloc.dart:93`*
 4. `ReaderService.open` calls `navigator.goTo(initialLocator)` — *evidence: `lib/features/reader/services/reader_service.dart:41`*
-5. **Failure:** `navigator.goTo` receives the locator but `navigator` is not yet initialized at this point — `_navigator` is `null`, the call is silently dropped, and the reader falls back to page 1 — *evidence: `reader_service.dart:38` shows `_navigator` is set in `onReaderReady` callback, which fires asynchronously after `open()` returns*
+5. **Failure:** `navigator.goTo` receives the locator but `navigator` is not yet initialized at this point — `_navigator` is `null`, the call is silently dropped, and the reader falls back to page 1 — *evidence: `lib/features/reader/services/reader_service.dart:38` shows `_navigator` is set in `onReaderReady` callback, which fires asynchronously after `open()` returns*
 
 **Root cause:** `goTo(initialLocator)` is called synchronously during `open()`, but the navigator is only available after the reader widget finishes initialization (`onReaderReady`). The locator is sent to a null navigator and silently discarded.
 
 **Supporting evidence:**
-- `reader_service.dart:38`: `_navigator = null` until `onReaderReady` assigns it at line 52
+- `lib/features/reader/services/reader_service.dart:38`: `_navigator = null` until `onReaderReady` assigns it at line 52
 - Flutter framework docs confirm widget initialization callbacks are asynchronous and fire after the first frame
-- `reader_service.dart:41`: no null check or queuing mechanism — `_navigator?.goTo(locator)` uses `?.` which silently no-ops on null
+- `lib/features/reader/services/reader_service.dart:41`: no null check or queuing mechanism — `_navigator?.goTo(locator)` uses `?.` which silently no-ops on null
 
 **What was ruled out:**
-- Database returning stale/null position: verified via `{tracker_cli} show` and direct SQL query — position is correctly stored and retrieved
+- Database returning stale/null position: verified via `bd show` and direct SQL query — position is correctly stored and retrieved
 - Locator format mismatch: the returned locator uses the same `Locator` type the navigator expects — confirmed by type analysis
 </example>
 
@@ -324,7 +330,7 @@ Writing this file and the Step 5d tracker update are the ONLY exceptions to the 
 - Directory: `{plans_dir}/{project}/{investigations_subdir}/` — create if missing (the Write tool creates parent directories automatically).
 - Filename: `{project}_invest_{short_name}.md`
   - `short_name`: 3–5 lowercase words separated by underscores, derived from the problem statement. Hyphens allowed within a word.
-  - Example: `myapp_invest_resume_locator_dropped.md`
+  - Example: `demo_invest_resume_locator_dropped.md`
 - If a file with that name already exists in the directory, append `_v2`, `_v3`, … until unique. Do not overwrite — prior investigations are evidence.
 
 **5b. Write the file.** Use the Write tool with this template, filling every bracketed field from Steps 2 and 4. Do not paraphrase the Gate-1 and Gate-2 content — copy it verbatim so the file is self-contained.
@@ -386,6 +392,20 @@ Pass this file path to the planning skill as background context. The planning sk
 ````
 </investigation-file-template>
 
+**5b-park. When the investigation ends differently.** The template above is the artifact for a proven cause with an approved fix — the interactive path, where Step 4's gate is already answered by the time you write the file. Three other outcomes are legitimate endings, not failures, and each has its own Status line; everything above `## Approved Fix` is written exactly as usual:
+
+| Outcome | Status line | Final section |
+|---|---|---|
+| Cause proven, fix chosen, gate unanswered | `**Status:** ROOT CAUSE CONFIRMED — FIX PROPOSED` | `## Approved Fix`, unchanged |
+| Cause proven, fix undetermined | `**Status:** ROOT CAUSE CONFIRMED — FIX PARKED` | `## Open Question` |
+| Evidence exhausted, no cause | `**Status:** ROOT CAUSE UNPROVEN — PARKED` | `## Open Question` |
+
+**The first row is a delegated run's normal ending, and only a delegated run's.** `_shared/autonomous-mode.md` §A routes Gate 2 to an independent verdict, and that verdict rules on the artifact — so the artifact is written before the gate it is waiting on, which is the reverse of the ordering Steps 4 and 5 assume. `## Approved Fix` stays as it is and keeps its four subsections: that section *is* the `<fix-format>` payload under review, and the Status line is the only thing that says whether anyone has ruled on it yet. Interactively this row never fires — the user answered Gate 2 before you reached Step 5.
+
+`## Open Question` holds **the question a human must answer, phrased as a question** — one that can be answered from where they stand, not a restatement of the defect. "Does the reader hold a second navigator reference after `onReaderReady`, or is `_navigator` the only one?" is the question; "the root cause is unproven" is a summary of it and sends the reader back into the artifact.
+
+Never write `FIX APPROVED` over an outcome you did not reach. Under `_shared/autonomous-mode.md` §A a delegated run cannot approve its own gates at all, so for a worker that status is not merely optimistic — it is a claim it has no standing to make; write `FIX PROPOSED` and let the verdict decide. `## Ruled Out` still carries what the investigation eliminated: a park that eliminated nothing is an investigation that did not happen.
+
 **5c. Confirm the write.** After the Write call returns, present the absolute path to the user as a single line of text, then continue with 5d:
 
 ```
@@ -399,7 +419,14 @@ Pass this file path to the planning skill as background context. The planning sk
 Root cause confirmed and fix approved. Use the planning skill to create the implementation plan."
 ```
 
-The status stays `needs-plan`: an investigation produces a proven cause, not a plan, so the bead is still not workable — `{plan_skill}` is what flips it to `open`.
+On a park (5b-park), the note's second line states the park and carries the open question instead, and the bead is not offered to planning — there is nothing yet to plan:
+
+```sh
+{tracker_cli} update <id> --status needs-plan --notes "Investigation: {absolute path}
+Parked: {the open question, verbatim} A human answers it before planning."
+```
+
+The status stays `needs-plan` either way: an investigation produces a proven cause, not a plan, so the bead is still not workable — `{plan_skill}` is what flips it to `open`.
 
 If your evidence disproved a cause the bead's title asserts, correct the title in the same call with `--title`. A title that states a wrong cause is worse than one that states only the symptom.
 

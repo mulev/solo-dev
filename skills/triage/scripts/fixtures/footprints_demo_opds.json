@@ -1,0 +1,77 @@
+{
+  "_source": "Hand-built from `bd show demo-13xd demo-njar demo-6dq --json` on 2026-08-28 (read-only). Three live demo beads that all concern OPDS test harnesses and injected collaborators — the case a module-level model would wrongly fuse into one epic.",
+  "footprints": [
+    {
+      "bead": "demo-13xd",
+      "files": [
+        {
+          "path": "demo/test/features/opds/screens/opds_catalog_screen_test_harness.dart",
+          "module": "demo/test/features/opds/screens",
+          "change": "modify"
+        },
+        {
+          "path": "demo/lib/features/opds/mixins/opds_download_handler.dart",
+          "module": "demo/lib/features/opds/mixins",
+          "change": "modify"
+        }
+      ],
+      "symbols": [
+        {"name": "buildCatalogScreen", "kind": "function", "change": "signature"},
+        {"name": "OpdsDownloadHandler._findSimilarBook", "kind": "method", "change": "behavior"}
+      ],
+      "modules": [
+        "demo/test/features/opds/screens",
+        "demo/lib/features/opds/mixins"
+      ]
+    },
+    {
+      "bead": "demo-njar",
+      "files": [
+        {
+          "path": "demo/test/features/opds/screens/opds_screen_mount_rules_test.dart",
+          "module": "demo/test/features/opds/screens",
+          "change": "modify"
+        },
+        {
+          "path": "demo/test/features/opds/screens/opds_feed_list_interaction_test.dart",
+          "module": "demo/test/features/opds/screens",
+          "change": "modify"
+        },
+        {
+          "path": "demo/test/features/opds/widgets/opds_catalog_sheet_test.dart",
+          "module": "demo/test/features/opds/widgets",
+          "change": "modify"
+        }
+      ],
+      "symbols": [
+        {"name": "buildSheet", "kind": "function", "change": "signature"}
+      ],
+      "modules": [
+        "demo/test/features/opds/screens",
+        "demo/test/features/opds/widgets"
+      ]
+    },
+    {
+      "bead": "demo-6dq",
+      "files": [
+        {
+          "path": "demo/lib/features/opds/screens/opds_catalog_screen.dart",
+          "module": "demo/lib/features/opds/screens",
+          "change": "modify"
+        },
+        {
+          "path": "demo/test/features/opds/screens/opds_catalog_download_options_guard_test.dart",
+          "module": "demo/test/features/opds/screens",
+          "change": "modify"
+        }
+      ],
+      "symbols": [
+        {"name": "OpdsCatalogScreen.navigateToEntry", "kind": "method", "change": "behavior"}
+      ],
+      "modules": [
+        "demo/lib/features/opds/screens",
+        "demo/test/features/opds/screens"
+      ]
+    }
+  ]
+}

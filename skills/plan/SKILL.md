@@ -62,6 +62,10 @@ See `../_shared/tooling-examples.md` for the canonical call shape.
 
 Where the rest of this skill says `AskUserQuestion`, treat it as a placeholder for whichever tool resolved above.
 
+**Delegated triage runs only.** If your brief names `../_shared/autonomous-mode.md`, read it before Step 2: it
+redirects `<plan-output-rules>` to a staging root, substitutes Step 7 with a QC verdict, and suspends Steps 8b/8c.
+`../triage/references/classification.md` is the single definition of bead routing. Echo its contract token in your report.
+
 ---
 
 ## Invoking companion skills
@@ -88,7 +92,7 @@ This skill reads `skill.config.md` from its base directory on every invocation.
 2. Use `AskUserQuestion` offering interactive or manual setup.
 3. **Interactive flow:**
    - Plans directory (default: `project_plans`)
-   - System plan mirror (default: empty/disabled; set it only if the harness has a plan-scanning directory — Claude Code uses `~/.claude/plans`)
+   - System plan mirror (default: `~/.claude/plans`, or empty to disable)
    - Known projects — name + code path pairs (at least one required)
    - Issue tracker — enable/disable, CLI command name (default: disabled)
    - Formatter and test command (or leave empty to infer from project instructions)
@@ -103,7 +107,7 @@ This skill reads `skill.config.md` from its base directory on every invocation.
 | Shorthand | Config field | Default |
 |-----------|-------------|---------|
 | `{plans_dir}` | Plans Directory → plans_dir | `project_plans` |
-| `{system_plan_dir}` | System Plan Mirror → system_plan_dir | (empty — mirroring disabled) |
+| `{system_plan_dir}` | System Plan Mirror → system_plan_dir | `~/.claude/plans` |
 | `{tracker_cli}` | Issue Tracker → cli_command | `bd` |
 | `{tracker_data}` | Issue Tracker → data_dir | `.beads` |
 | `{formatter}` | Formatter → command | (from project instructions) |
@@ -123,8 +127,6 @@ This skill reads `skill.config.md` from its base directory on every invocation.
 | New feature, fix, refactor, or tech task | **Create** | `references/plan-templates.md` |
 | Progress update, phase completion, bug round | **Update** | `references/update-and-complete.md` + `references/bug-and-completion.md` |
 | Plan fully done, move to done/ | **Complete** | `references/update-and-complete.md` + `references/bug-and-completion.md` |
-
-**Path convention:** every file path in this skill and in the files it points at is written **relative to this skill's own directory** — the one holding `SKILL.md`. So `references/x.md` means `<this skill>/references/x.md` even when you read it from inside `references/`, and `../_shared/x.md` means the `_shared` sibling skill. Resolve from the skill root, never from the file you happen to be reading.
 
 Read `references/conventions.md` for file naming, directory structure, type codes, and project detection.
 Read `references/plan-templates.md` for plan templates (single-phase file and multi-phase folder) with all mandatory sections.
@@ -154,7 +156,7 @@ options: [one per detected candidate project, label = project name, description 
 **Investigation file shortcut:** If the user provided a `.md` file whose path contains `/investigations/` OR whose first line matches `# {Project} Investigation:` OR whose front matter declares `**Status:** ROOT CAUSE CONFIRMED`, treat it as a pre-loaded investigation outcome from the `investigate` skill.
 
 When detected:
-- Read the file. The "Root Cause" + "Approved Fix" + "What changes" + "Side effects checked" sections together are the **already-confirmed requirements** — do not re-investigate, do not ask the user to re-confirm root cause, do not propose alternative fixes.
+- Read the file. The "Root Cause" + "Approved Fix" + "What changes" + "Side effects checked" sections together are the **already-confirmed requirements** — do not re-investigate, do not ask the user to re-confirm root cause, do not propose alternative fixes. This holds for `**Status:** ROOT CAUSE CONFIRMED — FIX PROPOSED` too: that status means the investigation's Gate 2 was answered by a quality-control verdict rather than in conversation (`../_shared/autonomous-mode.md` §A), and the file reached you because it passed. Treat it as approved and plan it; do not stall asking who approved it.
 - Skip bug-clarification questions in this step. Move straight to scope/sizing questions if needed.
 - **NEVER overwrite the investigation file.** It is reference evidence, not a task scratchpad. The plan file is written at the standard `{plans_dir}/{project}/todo/` location regardless of phase count.
 - In the resulting plan, add a `## Background` section near the top that links to the investigation file with its absolute path. Quote the one-sentence root-cause summary and one-sentence fix summary; do not duplicate the full analysis.
@@ -203,7 +205,7 @@ Investigate before writing:
 - **Module boundaries** — how the codebase is decomposed (by feature/domain, not by horizontal layer). Identify the natural module home for each new piece of code. See `../_shared/architecture-principles.md` (Modular monolith).
 - **Reusable helpers** — grep for existing utilities, services, or extensions that the new code could call. DRY is enforced at this step — duplicates planned without justification will be rejected during self-review.
 - **File-size hot spots** — read the largest files in the area you'll touch. If any approaches `{max_file_loc}` LOC, plan to split rather than grow.
-- Supported locales: scan for `l10n/`, `locales/`, `i18n/`, `*.arb`, `*.strings`, `Localizable.strings`, `*.xcstrings`, `*.po`/`*.pot`, `*.xliff`/`*.xlf`, `*.resx`, `*.properties`, or per-locale `*.json`/`*.yml`. If found, list every locale — all must be updated when user-facing content changes.
+- Supported locales: scan for `l10n/`, `*.arb`, `*.strings`, or `Localizable.strings` files. If found, list every locale — all must be updated when user-facing content changes.
 
 Use available MCP tools when the plan involves external libraries or frameworks:
 - **Context7**: Query documentation for APIs, classes, or patterns you're not certain about. Skip for pure internal refactoring or config-only changes.
@@ -231,8 +233,6 @@ Steps 5 and 6 produce the outline in conversation, not on disk: phases, per-phas
 
 <plan-output-rules>
 These rules govern the write in Step 7b — where each file goes and what must never be overwritten.
-
-**Mirror writes are conditional.** Every "create system plan file" instruction below applies only when `{system_plan_dir}` is non-empty in config. When it is empty, mirroring is off: skip the mirror file, skip its back-link, and say nothing about it. The plan file under `{plans_dir}` is the source of truth either way — a missing mirror is a configuration choice, never a gap to report.
 
 **Single-phase plans:**
 - **If an investigation file was detected in Step 2:** do NOT overwrite the investigation file. Write the plan to `{plans_dir}/{project}/todo/{filename}.md` per `references/conventions.md`. Add a `## Background` section linking to the investigation file (absolute path). Create system plan file at `{system_plan_dir}/{slug}.md`. Link both ways.

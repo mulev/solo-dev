@@ -23,17 +23,17 @@ plans_dir:
 investigations_subdir:
 
 ## Skills Directory
-<!-- Where this bundle's SKILL.md files live, used as the cross-harness fallback
-     (read the companion skill's SKILL.md directly when the harness has no
-     skill-invocation mechanism) and to locate execute/scripts/. The default is
-     where `npx skills add --global` installs; a project-scoped install puts them
-     in `.agents/skills` relative to the repo. Adjust if you installed elsewhere. -->
-skills_dir: ~/.agents/skills
+<!-- Where SKILL.md files live, used as the cross-harness fallback (read the
+     companion skill's SKILL.md directly when the harness has no skill-invocation
+     mechanism). Set to an absolute path during setup. Empty default forces
+     explicit configuration over silent failure. -->
+skills_dir:
 
 ## Known Projects
 <!-- Map project names to their root code paths for automatic detection.
      Investigate inherits this list from the plan/execute config bundle so
-     project detection stays consistent across all three skills. -->
+     project detection stays consistent across every skill in the bundle,
+     triage included. -->
 | Project | Code Path |
 |---------|-----------|
 | <!-- add your projects here --> | |

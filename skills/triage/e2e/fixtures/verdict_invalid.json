@@ -1,0 +1,13 @@
+{
+  "verdict": "PASS",
+  "defect_class": "none",
+  "defects": [
+    {
+      "severity": "critical",
+      "location": "lib/retry_client.py:10",
+      "why": "the root cause is asserted, not shown — no execution chain reaches this line"
+    }
+  ],
+  "confidence": 0.9,
+  "round": 1
+}

@@ -97,7 +97,7 @@ Read the investigation file for the full execution chain, supporting evidence, r
 
 ## Component Decomposition
 
-Atomic units this plan creates or modifies. Each component owns one logical action, passes the Meaningfulness Test, and is unit-testable in isolation. The smell threshold is ≤`{max_file_loc}` LOC — beyond that, either split (if every candidate split passes the Meaningfulness Test) or take a `**LOC waiver:**`. See `../_shared/architecture-principles.md`.
+Atomic units this plan creates or modifies. Each component owns one logical action, passes the Meaningfulness Test, and is unit-testable in isolation. The smell threshold is ≤`{max_file_loc}` LOC — beyond that, either split (if every candidate split passes the Meaningfulness Test) or take a `**LOC waiver:**`. See `../../_shared/architecture-principles.md`.
 
 | Component | Responsibility (one sentence, no "and") | Public API | Callers (≥2 OR single-caller + own test) | Foreign modules touched | Projected LOC | Test approach |
 |-----------|------------------------------------------|------------|------------------------------------------|-------------------------|---------------|---------------|
@@ -162,7 +162,7 @@ Atomic units this plan creates or modifies. Each component owns one logical acti
 
 - [ ] Run the configured formatter (`{formatter}`). Done when no changes.
 - [ ] Run `{test command}` one final time. Done when "TESTS PASSED".
-- [ ] Run the architecture gate on every changed file (`git diff --name-only`) and write the `## Architecture Gate Results` block into this plan file. See `../execute/references/update-format.md` (Adding the Architecture Gate Results). Done when the block exists with **Overall: PASS** and every row PASS.
+- [ ] Run the architecture gate on every changed file (`git diff --name-only`) and write the `## Architecture Gate Results` block into this plan file. See execute skill `references/update-format.md` (Adding the Architecture Gate Results). Done when the block exists with **Overall: PASS** and every row PASS.
 
 ---
 
@@ -238,7 +238,7 @@ For each non-English locale: adopt the role of a native speaker to produce natur
 - [ ] {Manual verification step 2}
 
 ### Phase exit
-- Run from the repo root: `./validate run phase-exit` — every row PASS, output pasted into the `### Validation` block of this file's `## Architecture Gate Results`, then `./validate verify phase-exit {this file}` exits 0. See `../_shared/validators.md`.
+- Run from the repo root: `./validate run phase-exit` — every row PASS, then `./validate verify phase-exit` (no file argument) exits 0. The run writes the repo's `ledger`; record the verdict line and the ledger's commit in the `### Validation` block of this file's `## Architecture Gate Results`, and stage `ledger` with the phase commit. See `../../_shared/validators.md`.
 
 ## Success Criteria
 
@@ -310,7 +310,7 @@ Read the investigation file for the full execution chain, supporting evidence, r
 
 ## Architecture Boundaries
 
-Modular-monolith placement for code introduced by this epic. See `../_shared/architecture-principles.md`.
+Modular-monolith placement for code introduced by this epic. See `../../_shared/architecture-principles.md`.
 
 - **Feature/domain modules touched:** {e.g., `lib/features/reader/`, `lib/features/library/`}
 - **New modules introduced:** {list, with single-sentence responsibility each — or "None"}
@@ -334,11 +334,11 @@ Modular-monolith placement for code introduced by this epic. See `../_shared/arc
 
 ## Dispatch Log
 
-{Filled during execution when phases are delegated. This table is the epic's state on disk — after a compaction it is how the main session knows where it is, instead of guessing. Baseline row first. `Dispatched` and `Returned` are UTC timestamps to the second (`date -u +%Y-%m-%dT%H:%M:%SZ`), never bare dates or wall-clock times: the row exists to be lined up against that bead's validator ledger header (`started=` / `finished=`), and only a full stamp answers whether the ledger was earned after the dispatch it claims.}
+{Filled during execution when phases are delegated. This table is the epic's state on disk — after a compaction it is how the main session knows where it is, instead of guessing. Baseline row first. `Dispatched` and `Returned` are UTC timestamps to the second (`date -u +%Y-%m-%dT%H:%M:%SZ`), never bare dates or wall-clock times: the row exists to be lined up against that bead's validator ledger header in git (`git show <sha>:ledger`), not against a block pasted into a plan file, and only a full stamp answers whether the ledger was earned after the dispatch it claims.}
 
 | Bead | Worker | Dispatched | Returned | Commits | Gate | Ledger | Bead state |
 |------|--------|------------|----------|---------|------|--------|------------|
-| — | baseline | `2026-08-19T19:41:27Z` | `2026-08-19T19:50:33Z` | — | — | `validate run phase-exit` 5/5 PASS @ `aaf13fe` | — |
+| — | baseline | `2026-08-19T19:41:27Z` | `2026-08-19T19:50:33Z` | — | — | {verdict line verbatim} @ `aaf13fe` | — |
 
 ## Objective
 
@@ -418,7 +418,7 @@ Each slice file is self-contained for execution — a tracker task points to thi
 
 ## Component Decomposition
 
-Atomic units this phase creates or modifies. Each component owns one logical action, passes the Meaningfulness Test, and is unit-testable in isolation. The smell threshold is ≤`{max_file_loc}` LOC — beyond that, either split (if every candidate split passes the Meaningfulness Test) or take a `**LOC waiver:**`. See `../_shared/architecture-principles.md`.
+Atomic units this phase creates or modifies. Each component owns one logical action, passes the Meaningfulness Test, and is unit-testable in isolation. The smell threshold is ≤`{max_file_loc}` LOC — beyond that, either split (if every candidate split passes the Meaningfulness Test) or take a `**LOC waiver:**`. See `../../_shared/architecture-principles.md`.
 
 | Component | Responsibility (one sentence, no "and") | Public API | Callers (≥2 OR single-caller + own test) | Foreign modules touched | Projected LOC | Test approach |
 |-----------|------------------------------------------|------------|------------------------------------------|-------------------------|---------------|---------------|
@@ -438,7 +438,7 @@ Atomic units this phase creates or modifies. Each component owns one logical act
 - [ ] Add integration test for `{flow}` in `{file}`. Done when test compiles.
 - [ ] Update `{doc_file}` — add section on `{topic}`. Done when saved.
 - [ ] Run `{formatter}` + `{test command}`. Done when clean + "TESTS PASSED".
-- [ ] Run the architecture gate on every changed file (`git diff --name-only`) and write the `## Architecture Gate Results` block into this slice file. See `../execute/references/update-format.md` (Adding the Architecture Gate Results). Done when the block exists with **Overall: PASS** and every row PASS.
+- [ ] Run the architecture gate on every changed file (`git diff --name-only`) and write the `## Architecture Gate Results` block into this slice file. See execute skill `references/update-format.md` (Adding the Architecture Gate Results). Done when the block exists with **Overall: PASS** and every row PASS.
 
 ## Implementation
 
@@ -480,7 +480,7 @@ Describe all tests BEFORE writing any implementation code. TDD red-green cycle i
 ## Verification
 
 - TDD inner loop: `{test command}` on the changed test files.
-- Phase exit, run from the repo root: `./validate run phase-exit` — every row PASS, output pasted into this file's `### Validation` block, then `./validate verify phase-exit {this file}` exits 0. See `../_shared/validators.md`.
+- Phase exit, run from the repo root: `./validate run phase-exit` — every row PASS, then `./validate verify phase-exit` (no file argument) exits 0. The run writes the repo's `ledger`; record the verdict line and the ledger's commit in this file's `### Validation` block, and stage `ledger` with the phase commit. See `../../_shared/validators.md`.
 
 ## Files Created
 

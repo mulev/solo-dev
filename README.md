@@ -2,7 +2,7 @@
 
 Agent skills for developers who ship alone.
 
-Three workflow skills plus the doctrine they share. The point of the bundle is
+Five workflow skills plus the doctrine they share. The point of the bundle is
 not that an agent follows steps — it is that every claim it makes about your code
 is checkable, and every gate it says it passed left an artifact behind.
 
@@ -18,13 +18,13 @@ support the skills format. Also installable as a Claude Code plugin from
 
 Install `_shared` alongside whichever workflow skills you take. It has no
 workflow of its own — it holds the architecture principles, the validator
-system, the conduct doctrine, and the runner that the other three read by
+system, the conduct doctrine, and the runner that the others read by
 relative path. `npx skills add mulev/solo-dev --all` gets everything; picking
 individual skills without `_shared` leaves those references dangling.
 
 ## What's in here
 
-The three form a pipeline:
+Three of them form a pipeline:
 
 ```
 investigate  →  plan  →  execute
@@ -52,6 +52,22 @@ provenance header verifies, and a plan file updated on disk. A bare epic ID is
 the exception: it asks whether to dispatch the whole epic to workers or run a
 single phase.
 
+Two more sit beside the pipeline rather than inside it.
+
+**`triage`** points the pipeline at a whole backlog and works through it on its
+own. It investigates the issues nobody has proved a cause for, then plans all of
+them. The gates that would normally wait for your answer are answered by an
+independent reviewer instead, never by triage's own reading of its own work. It
+stops in two places on purpose, which is what makes it safe to leave running: it
+never executes code, and it never promotes. Everything a run produces lands in a
+staging directory belonging to that run, so a run you don't like is one command
+to delete and leaves nothing behind.
+
+**`marketer`** is a research-first marketing toolkit — app store and search
+optimisation, competitor analysis, pricing. It classifies how confident each
+claim is and names the method that would validate it, rather than recommending
+and hoping.
+
 ## Quick reference
 
 | Skill | Trigger phrases |
@@ -59,7 +75,9 @@ single phase.
 | `investigate` | "debug", "investigate", "why does this happen", "find the bug" |
 | `plan` | "plan", "create a plan", "plan this feature" |
 | `execute` | "execute", "next task", "start implementing", "what's next" |
-| `_shared` | never — support files, read by the three above |
+| `triage` | "triage the backlog", "work through the open issues" |
+| `marketer` | "ASO", "SEO", "competitor research", "pricing strategy" |
+| `_shared` | never — support files, read by the others |
 
 ## What these skills actually enforce
 

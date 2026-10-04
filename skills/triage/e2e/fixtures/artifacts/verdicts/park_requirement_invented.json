@@ -1,0 +1,13 @@
+{
+  "verdict": "PARK",
+  "defect_class": "requirement-invented",
+  "defects": [
+    {
+      "severity": "critical",
+      "location": "a.md:31",
+      "why": "Which line of the bead or the investigation asks for a settings screen?"
+    }
+  ],
+  "confidence": 0.58,
+  "round": 1
+}

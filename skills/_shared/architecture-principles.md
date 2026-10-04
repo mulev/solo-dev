@@ -35,7 +35,7 @@ These numbers are **signals to investigate, not gates to pass**. Crossing one tr
 
 | Signal | Threshold | What it usually means |
 |--------|-----------|----------------------|
-| File length | >`{max_file_loc}` LOC (excluding comments and blank lines) | Possibly multiple responsibilities — apply the Meaningfulness Test before splitting |
+| File length | >`{max_file_loc}` LOC (excluding comments, doc prose, and blank lines) | Possibly multiple responsibilities — apply the Meaningfulness Test before splitting |
 | Function length | >40 LOC | Likely nested concerns — extract only if the extractee earns its own name and its own test |
 | Cyclomatic complexity | >10 per function | Replace nesting with early returns or polymorphism, not extraction-for-extraction's-sake |
 | Cross-module coupling | references to >5 distinct foreign feature/domain modules from this file's behavior | Module spans too many domains — split by responsibility, not by relocating imports |
@@ -91,7 +91,7 @@ Reject during planning; refactor on sight during execution:
 - **Parallel hierarchies** — when changing module A always requires a matching change in module B, fold them into one module.
 - **Speculative parameters** — function arguments with no current caller. Remove until the caller exists.
 - **Catch-all files** — `utils.dart`, `common.py`, `helpers.ts`. Move each helper next to its single user or into a focused, named module.
-- **Re-export shim** — file whose body is overwhelmingly `export` / re-export / barrel statements (≥80% of non-blank, non-comment lines), created to drop a parent file's import count. Always FAIL the gate. Inline back into the parent and take a coupling waiver if the parent legitimately needs the imports.
+- **Re-export shim** — file whose body is overwhelmingly `export` / re-export / barrel statements (≥80% of its code lines, doc prose excluded), created to drop a parent file's import count. Always FAIL the gate. Inline back into the parent and take a coupling waiver if the parent legitimately needs the imports.
 - **Barrel index** — `index.{ts,js,dart}` (or equivalent) introduced to collapse multiple imports into one for the sole purpose of dropping a coupling number. Same fix as re-export shim.
 - **Single-caller satellite** — module imported by exactly one parent and tested only through that parent. FAIL unless the extractee carries an independent behavior-level test. Inline back.
 - **Rename bypass** — renaming `*Manager` / `*Helper` / `*Util` to a domain noun without removing the god-object behavior. The check is responsibility count, not the name.
@@ -115,7 +115,7 @@ Reject during planning; refactor on sight during execution:
 
 ## Runtime application (execute skill)
 
-Run the architecture verification gate as Step 2.3 of execute, after the simplifier (Step 2.2) finishes and before format (Step 2.4). The gate produces a **required artifact** — the `## Architecture Gate Results` block in the working file. No artifact, no phase exit. See `../execute/references/update-format.md` (Adding the Architecture Gate Results) for the block template.
+Run the architecture verification gate as Step 2.3 of execute, after the simplifier (Step 2.2) finishes and before format (Step 2.4). The gate produces a **required artifact** — the `## Architecture Gate Results` block in the working file. No artifact, no phase exit. See `references/update-format.md` (Adding the Architecture Gate Results) for the block template.
 
 **No pre-existing-condition exemption.** Every file in `git diff --name-only` is subject to all six checks against its current state. A violation introduced before this phase is not grounds to skip or waive it — open a Refactoring Round and fix it. "It was already there" is never an acceptable gate result.
 
@@ -127,7 +127,7 @@ For every file in `git diff --name-only` for this phase, run the six checks belo
 [arch-gate] file={path} LOC={status} SHIM={status} DEPS={status} SRP={status} DRY={status} TEST={status}
 ```
 
-Each `{status}` is `PASS` or `FAIL(<reason>)`. Automated checks (LOC, SHIM) come from the helper script below; DEPS, SRP, DRY, TEST are model/human judgments — record the one-sentence reasoning (and for DEPS, the foreign-module enumeration) in the results block, not the banner.
+Each `{status}` is `PASS` or `FAIL(<reason>)`. Automated checks (LOC, SHIM) come from the helper script below; DEPS, SRP, DRY, TEST are model/human judgments — record the one-sentence reasoning (and for DEPS, the foreign-module enumeration) in the results block, not the banner. LOC reads `PASS({n}+{d}doc)` / `FAIL({n}+{d}doc>{max})` when the file spends lines on doc prose, and `PASS({n})` / `FAIL({n}>{max})` when it does not; `{n}` is code either way.
 
 ### Helper script (LOC + SHIM)
 
@@ -135,22 +135,22 @@ Each `{status}` is `PASS` or `FAIL(<reason>)`. Automated checks (LOC, SHIM) come
 python3 {skills_dir}/execute/scripts/run_arch_gate.py <file> --max-loc {max_file_loc}
 ```
 
-The script emits the banner and exits non-zero if LOC or SHIM fail. Run it on every changed file. SHIM detection flags any file whose non-blank, non-comment lines are ≥80% `export` / re-export statements — the canonical metric-laundering pattern. If the script does not cover the language (no import or export pattern), do the LOC count manually with `wc -l` minus blanks/comments and report `SHIM=MANUAL` after a visual inspection.
+The script emits the banner and exits non-zero if LOC or SHIM fail. Run it on every changed file. Both automated numbers count code lines only — blank lines, comments, and Python docstring prose are excluded, and the prose figure is reported beside the LOC number rather than folded into it. SHIM detection flags any file whose code lines are ≥80% `export` / re-export statements — the canonical metric-laundering pattern. If the script does not cover the language (no import or export pattern), do the LOC count manually with `wc -l` minus blanks, comments and doc prose, and report `SHIM=MANUAL` after a visual inspection.
 
 ### Six checks
 
 1. **LOC check** — run helper; on FAIL apply the Meaningfulness Test. If every candidate split fails the test, record a `**LOC waiver:**` with one-sentence reasoning and pass the row. Do not split for the sake of the number.
-2. **SHIM check** — helper flags any file whose non-blank, non-comment lines are ≥80% re-export statements. On FAIL inline the file back into its parent and take a coupling waiver if needed. No exceptions — re-export shims are always wrong.
+2. **SHIM check** — helper flags any file whose code lines are ≥80% re-export statements. On FAIL inline the file back into its parent and take a coupling waiver if needed. No exceptions — re-export shims are always wrong.
 3. **SRP check** — describe the file's purpose in one sentence. If "and" is required, apply the Meaningfulness Test before splitting. Record the sentence.
 4. **DRY check** — for each new helper, run `rg '<helper-name>'` and `rg '<near-synonym>'` across the project. If a near-duplicate exists, FAIL — replace your helper with the existing one and re-run tests. Record the grep terms.
 5. **Coupling (DEPS) check** — enumerate the foreign feature/domain modules this file's behavior touches. Read the code; do not just count `import` lines. On FAIL (>5 distinct foreign modules) split by responsibility — never by relocating imports into a shim. Record the enumeration in the results block.
 6. **Testability check** — confirm the file's tests run without global setup, static patching, or singleton resets. On FAIL redesign with constructor-injected dependencies. Record the test strategy.
 
-If any check FAILs, treat the violation as a Refactoring Round (see `../execute/references/update-format.md`). Do not flip the phase status until every changed file's row in the results table is PASS.
+If any check FAILs, treat the violation as a Refactoring Round (see `references/update-format.md`). Do not flip the phase status until every changed file's row in the results table is PASS.
 
 | Execute step | What to do |
 |--------------|------------|
-| Step 2.2 (Simplify) | If the `{code_simplifier}` spawn fails or config is empty, apply the simplification checklist locally and record the skip in Step 2.3's Companion-skill status line. A policy rule is never the trigger — the skill's own invocation authorizes the agent. |
+| Step 2.2 (Simplify) | Resolve `{code_simplifier}` per the execute skill's *Dispatching companion agents* and record the rung that ran in Step 2.3's Companion-skill status line. A policy rule is never the trigger — the skill's own invocation authorizes the agent. |
 | Step 2.3 (Architecture Gate) | Run the gate on every changed file. Capture each file's `[arch-gate]` banner. Write the `## Architecture Gate Results` block into the working file. Required artifact — phase cannot exit without it. |
 | Step 2 (Refactoring Round) | If any row is FAIL, open a Refactoring Round in the working file, perform the split/inline/extract, re-run the changed tests, then regenerate the gate block from the post-refactor file set. |
 | Step 3.0 (Fail-closed precondition) | Verify the working file contains the `## Architecture Gate Results` block with **Overall: PASS** before any commit, status flip, or tracker close. |

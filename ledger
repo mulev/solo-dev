@@ -1,0 +1,6 @@
+# stage=phase-exit conf=857053940-1512 commit=aee9e91 dirty=yes started=2026-10-03T23:53:10Z finished=2026-10-03T23:54:47Z finished_epoch=1791071687 rows=syntax,runner,gate,triage,mirror
+syntax	PASS	2026-10-03T23:53:10Z	(no output)
+runner	PASS	2026-10-03T23:53:39Z	validate: 29 cases, all assertions passed
+gate	PASS	2026-10-03T23:53:40Z	16/16 passed
+triage	PASS	2026-10-03T23:54:47Z	48/48 test files passed
+mirror	PASS	2026-10-03T23:54:47Z	(no output)

@@ -90,10 +90,10 @@ Scope: every file returned by `git diff --name-only` for this phase, including t
 Banner (one line per file, captured from `run_arch_gate.py` or manual run):
 
 \```
-[arch-gate] file={path} LOC=PASS({n}) SHIM=PASS({exp}/{code}) DEPS=MANUAL SRP=MANUAL DRY=MANUAL TEST=MANUAL
+[arch-gate] file={path} LOC=PASS({n}+{d}doc) SHIM=PASS({exp}/{code}) DEPS=MANUAL SRP=MANUAL DRY=MANUAL TEST=MANUAL
 \```
 
-LOC and SHIM are automated (helper script). DEPS, SRP, DRY, TEST are model/human judgments — fill the table below with the reasoning. The banner stays as the script emits it; the table carries the conclusions.
+LOC and SHIM are automated (helper script). The LOC field carries a `+{d}doc` suffix only when the file spends lines on doc prose — a Python docstring — so a file with none reads `LOC=PASS({n})`, and over the limit the forms are `FAIL({n}+{d}doc>{max})` and `FAIL({n}>{max})`. `{n}` is code either way, and so is `{code}` in the SHIM field; a file with no code lines at all — a package `__init__.py` holding only a module docstring — reports a bare `SHIM=PASS` with no parenthetical. DEPS, SRP, DRY, TEST are model/human judgments — fill the table below with the reasoning. The banner stays as the script emits it; the table carries the conclusions.
 
 | File | LOC | SHIM | SRP | DRY | DEPS (foreign modules touched) | TEST | Overall |
 |------|-----|------|-----|-----|-------------------------------|------|---------|
@@ -102,26 +102,25 @@ LOC and SHIM are automated (helper script). DEPS, SRP, DRY, TEST are model/human
 If any new file in the table fails the Meaningfulness Test (independent name, ≥2 unrelated callers OR independent test, real coupling reduction, survives inline-back), record it as a SHIM or DEPS FAIL with the failing condition — do not paper over the smell with a "PASS" annotation.
 
 **Companion-skill status:**
-- `{code_simplifier}`: ran / skipped — {quoted spawn error / empty config}
-- `{code_reviewer}`: deferred to Step 5 / skipped — {reason}
+- `{code_simplifier}`: ran (roster: `{agent name}`) / ran (briefed worker) / skipped — {empty config / no subagent mechanism / quoted rung-2 spawn error}
+- `{code_reviewer}`: deferred to Step 5 / ran (roster: `{agent name}`) / ran (briefed worker) / skipped — {reason}
 
-When a companion skill is `skipped`, the local checklist replaces it — record below which manual checks compensated.
+Name the rung, not just the outcome (execute `SKILL.md`, *Dispatching companion agents*): `ran` on its own hides whether a registered agent or a briefed generic worker did the work. When the rung is the local checklist, record below which manual checks compensated.
 
 ### Validation
 
-Output of `./validate run phase-exit`, run from the repo root and pasted verbatim — **provenance header first**, then id, result, UTC timestamp, last output line (see `../_shared/validators.md`):
+Two lines, recorded after `./validate run phase-exit` wrote `{repo root}/ledger` and `./validate verify phase-exit` exited 0 (see `../../_shared/validators.md`):
 
 \```
-# stage=phase-exit conf=1524238371-412 commit=25fec33 dirty=no started=2026-08-19T11:47:12Z finished=2026-08-19T11:55:46Z finished_epoch=1786010146 rows=static,suites
-static  PASS  2026-08-19T11:47:15Z  No issues found!
-suites  PASS  2026-08-19T11:55:44Z  All tests passed!
+verify: {the verdict line `./validate verify phase-exit` printed, verbatim}
+ledger: {sha} — the commit carrying `ledger`; full rows: `git show {sha}:ledger`
 \```
 
-`cd {repo root} && ./validate verify phase-exit {this file}` → exit 0. The header is what makes this checkable: verification requires every row stamped inside that run's window and the run to be no older than the code it claims, so a ledger copied from another phase, typed by hand, or earned before the last edit all fail. Paste the header or the ledger proves nothing.
+The ledger itself is a file in the repo, committed with the source it proves, so this block is a pointer rather than a copy. `git show {sha}:ledger` is where every row, its stamp and the provenance header live.
 
 Every row must be PASS. A FAIL opens a Bug Round or Refactoring Round and the **whole stage** re-runs afterwards. `user`-stage rows appear as `PENDING-USER` and are handed to the user in the close-out. If the repo has no `validators.conf` (runner exits 2), this section reads `validators: none — {reason}` and the report says so.
 
-A later phase may add a validator row. From then on `verify` reports it as `DRIFT` against this block — expected, not a failure, and never a reason to re-run this phase's stage. Record the line and leave the ledger alone:
+A later phase may add a validator row. From then on `verify` reports it as `DRIFT` against the ledger — expected, not a failure, and never a reason to re-run the stage. Record the line and leave the ledger alone:
 
 \```
 validate: DRIFT static-plugin — the stage gained this row after this ledger ran

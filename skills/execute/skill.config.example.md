@@ -16,12 +16,11 @@ type: config
 plans_dir: project_plans
 
 ## Skills Directory
-<!-- Where this bundle's SKILL.md files live, used as the cross-harness fallback
-     (read the companion skill's SKILL.md directly when the harness has no
-     skill-invocation mechanism) and to locate execute/scripts/. The default is
-     where `npx skills add --global` installs; a project-scoped install puts them
-     in `.agents/skills` relative to the repo. Adjust if you installed elsewhere. -->
-skills_dir: ~/.agents/skills
+<!-- Where SKILL.md files live, used as the cross-harness fallback (read the
+     companion skill's SKILL.md directly when the harness has no skill-invocation
+     mechanism). Set to an absolute path during setup. Empty default forces
+     explicit configuration over silent failure. -->
+skills_dir:
 
 ## Known Projects
 <!-- Map project names to their root code paths for automatic detection. -->
@@ -53,18 +52,21 @@ plan_skill: plan
 
 ## Companion Agents
 <!-- Agents launched during execution — prescribed steps, not optional extras: the
-     skill's own invocation authorizes them, so dispatch without asking. Set a
-     value to empty to skip that step. Values here are Claude Code plugin:agent
-     form; resolve to the running harness's roster name at dispatch. -->
-code_simplifier: code-simplifier:code-simplifier
-code_reviewer: code-review:code-review
+     skill's own invocation authorizes them, so dispatch without asking. Each
+     value is an ordered candidate list, most specific first; an empty value
+     forces the step's local fallback rather than skipping it. How a candidate
+     becomes a dispatch is in SKILL.md, "Dispatching companion agents". Never
+     assert here which name a given harness carries; the roster answers that at
+     dispatch. -->
+code_simplifier: code-simplifier:code-simplifier, code-simplifier
+code_reviewer: code-review:code-review, reviewer
 
 ## Post-Processing
 <!-- Bare skill name applied to generated text before finalizing. Set to empty to skip. -->
 commit_message_processor: humanizer
 
 ## Architecture
-<!-- Hard limit for file length (LOC, excluding comments and blank lines). -->
+<!-- Hard limit for file length (LOC, excluding comments, doc prose, and blank lines). -->
 <!-- Used by the architecture verification gate after each implementation step. -->
 <!-- Files over this limit must be split or carry an explicit LOC waiver in the plan. -->
 max_file_loc: 300

@@ -1,0 +1,18 @@
+{
+  "verdict": "REVISE",
+  "defect_class": "repairable",
+  "defects": [
+    {
+      "severity": "major",
+      "location": "a.md:10",
+      "why": "The cited line does not contain the quoted call."
+    },
+    {
+      "severity": "major",
+      "location": "a.md:20",
+      "why": "The cited line does not contain the quoted call."
+    }
+  ],
+  "confidence": 0.7,
+  "round": 1
+}

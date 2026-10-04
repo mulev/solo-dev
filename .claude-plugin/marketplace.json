@@ -5,20 +5,22 @@
     "email": "m.mulev@gmail.com"
   },
   "metadata": {
-    "description": "Investigate, plan, execute — opinionated, evidence-gated workflow skills for solo developers working with AI agents",
-    "version": "2.0.0"
+    "description": "Evidence-gated workflow skills for solo developers working with AI agents: investigate, plan, execute, plus autonomous backlog triage and marketing research",
+    "version": "3.0.0"
   },
   "plugins": [
     {
       "name": "solo-dev",
-      "description": "Evidence-gated workflow skills: root-cause investigation, vertical-slice planning, and phase-by-phase execution with architecture and validator gates",
+      "description": "Evidence-gated workflow skills: root-cause investigation, vertical-slice planning, phase-by-phase execution with architecture and validator gates, autonomous backlog triage, and research-first marketing analysis",
       "source": "./",
       "strict": false,
       "skills": [
-        "./skills/investigate",
-        "./skills/plan",
+        "./skills/_shared",
         "./skills/execute",
-        "./skills/_shared"
+        "./skills/investigate",
+        "./skills/marketer",
+        "./skills/plan",
+        "./skills/triage"
       ]
     }
   ]

@@ -3,3 +3,6 @@
 
 # macOS
 .DS_Store
+
+# Bytecode from running the bundle's own test suites
+__pycache__/
